@@ -38,7 +38,7 @@ rsconnect/
 # Data
 
 
-data/raw/
+data/raw/*
 !data/raw/london_lsoa_zone_1.RData
 data/derived/
 data/analytical/
