@@ -1,0 +1,41 @@
+---
+output: pdf_document
+---
+
+```{tikz fig-3-model-dag, fig.id = "fig-3-model-dag", echo = FALSE, fig.cap = "Model to be estimated", fig.width = 12.7/5, fig.height = 10.16/5}
+\usetikzlibrary{positioning}
+\definecolor{black}{HTML}{000000}
+\tikzset{
+    > = stealth,
+    every node/.append style = {
+        draw = none
+    },
+    every path/.append style = {
+        arrows = ->,
+        draw = black,
+        fill = none
+    },
+    hidden/.style = {
+        draw = black,
+        shape = circle,
+        inner sep = 1pt
+    }
+}
+\tikz{
+    \node (a1) at (0,0) {$A_1$};
+    \node[hidden] (u) at (1,-1) {$U$};
+    \node (c1) at (0,2)  {$C_1$};
+    \node (a2) at (2,0)  {$A_2$};
+    \node (c2) at (2,2)  {$C_2$};
+    \path (a1) edge (c1);
+    \path (c1) edge (c2);
+    \path (a2) edge (c2);
+    \path (a1) edge (a2);
+    \path (a1) edge (c2);
+    \path (c1) edge (a2);
+    \path (u) edge (a1);
+    \path (u) edge (a2);
+    \path (u) edge [bend left=60] (c1);
+    \path (u) edge [bend right=60] (c2);
+  }
+```

@@ -1,0 +1,107 @@
+---
+output:
+  officedown::rdocx_document:
+    base_format: "bookdown::word_document2"
+    reference_num: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE, fig.path = "./figure/")
+library(tidyverse)
+library(flextable)
+library(sf)
+library(ggtext)
+library(patchwork)
+library(ggspatial)
+source("../project_functions.R")
+set_flextable_defaults(font.family = "Times New Roman")
+```
+
+
+```{r descriptives, echo = FALSE, message = FALSE, label = "descriptives", tab.cap = "Descriptive statistics: LSOA quarters", tab.id = "tab-desc"}
+load("../../data/output/quarter_descriptives.RData")
+quarter_descriptives %>%
+  filter(!name %in% c("nni", "median_priceper", "n_sales")) %>%
+  mutate(name = str_to_title(str_replace_all(name, "_", " ")),
+         name = 
+           case_when(
+             name == "Asb" ~ "ASB", 
+             name == "Violence Harm" ~ "Violence with Harm",
+             name == "Entire Home Apt" ~ "Entire Property",
+             TRUE ~ name)) |>
+  mutate(name = fct_relevel(name,
+                            "Active Rentals", 
+                            "Entire Property", 
+                            "Private Room", 
+                            "Shared Room",
+                            "Robbery",
+                            "Burglary",
+                            "Theft",
+                            "ASB",
+                            "Violence",
+                            "Violence with Harm")) |>
+  janitor::clean_names(case = "title") %>%
+  select(-Missing, - `Missing Pct`) %>%
+  rename(SD = Sd) %>%
+  flextable() %>%
+  fontsize(size = 10, part = "all") %>%
+  set_table_properties(width = 1, layout = "fixed") %>%
+  width(j = 3:7, width = 0.7) %>%
+  width(j = 2, width = 1) %>%
+  width(j = 1, width = 1.4) %>%
+  padding(part = "all", padding.left = 1, padding.right = 1, padding.top = 2, padding.bottom = 2) %>%
+  colformat_double(digits = 2) %>%
+  # add_header_lines("Table 1. Descriptive Statistics: LSOA Quarters") %>%
+  add_footer_lines("NT = 62,855 (N = 4,835, T = 13)") %>%
+  border_remove() %>%
+  hline_bottom(border = officer::fp_border(width = 1), part = "body") %>%
+  hline_top(border = officer::fp_border(width = 1), part = "header") %>%
+  hline_top(border = officer::fp_border(width = 0.5))
+```
+
+\newpage
+
+```{r half-year-descriptives, echo = FALSE, message = FALSE, label = "half-year-descriptives", tab.cap = "Descriptive statistics: Ward half-years", tab.id = "tab-half-year-descp"}
+load("../../data/output/year_half_descriptives.RData")
+year_half_descriptives %>%
+  filter(!name %in% c("nni", "n_sales")) %>%
+  mutate(name = str_to_title(str_replace_all(str_remove(name, "_aw"), "_", " ")),
+         name = 
+           case_when(
+             name == "Median Priceper" ~ "Median Price per m^2",
+             name == "Asb" ~ "ASB", 
+             name == "Violence Harm" ~ "Violence with Harm",
+             name == "Entire Home Apt" ~ "Entire Property",
+             TRUE ~ name)) |>
+  mutate(name = fct_relevel(name,
+                            "Active Rentals", 
+                            "Entire Property", 
+                            "Private Room", 
+                            "Shared Room", 
+                            "Collective Efficacy",
+                            "Median Price per m^2",
+                            "Robbery",
+                            "Burglary",
+                            "Theft",
+                            "ASB",
+                            "Violence",
+                            "Violence with Harm")) |>
+  arrange(name) %>%
+  janitor::clean_names(case = "title") %>%
+    select(-Missing, - `Missing Pct`) %>%
+  rename(SD = Sd) %>%
+  flextable() %>%
+  fontsize(size = 10, part = "all") %>%
+  set_table_properties(width = 1, layout = "fixed") %>%
+  width(j = 3:7, width = 0.7) %>%
+  width(j = 2, width = 1) %>%
+  width(j = 1, width = 1.4) %>%
+  padding(part = "all", padding.left = 1, padding.right = 1, padding.top = 2, padding.bottom = 2) %>%
+  colformat_double(digits = 2) %>%
+  # add_header_lines("Table 1. Descriptive Statistics: LSOA Quarters") %>%
+  add_footer_lines("NT = 4,424 (N = 632, T = 7)") %>%
+  border_remove() %>%
+  hline_bottom(border = officer::fp_border(width = 1), part = "body") %>%
+  hline_top(border = officer::fp_border(width = 1), part = "header") %>%
+  hline_top(border = officer::fp_border(width = 0.5)) 
+```

@@ -1,0 +1,474 @@
+---
+title: "Appendix"
+output: 
+  officedown::rdocx_document:
+    base_format: "bookdown::word_document2"
+    number_sections: true
+    reference_num: false
+    reference_docx: ref_docs/ref_doc_crim.docx
+    tables:
+      caption:
+        style: Table Caption
+        pre: 'TABLE A'
+        sep: ' '
+    plots:
+      caption:
+        style: Image Caption
+        pre: 'FIGURE A'
+        sep: ' '
+bibliography: bib/full_library.bib
+csl: csl/apa-7th-edition.csl
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, fig.path = "./figure-appendix/")
+library(tidyverse)
+library(flextable)
+library(sf)
+library(ggtext)
+library(ggspatial)
+library(patchwork)
+library(ggh4x)
+source("../syntax/project_functions.R")
+set_flextable_defaults(font.family = "Times New Roman")
+```
+
+
+# Population Density
+
+Figure A\@ref(fig:fig-1-pop-density) illustrates that the population density of London LSOAs is much less concentrated than the density of Airbnb properties seen in figure 1 in the main text.
+
+```{r fig-1-pop-density, fig.id = "fig-1-pop-density", dev = "png", dpi = 300, fig.width = 6.5, fig.cap = "Population density of London LSOAs"}
+load("../data/output/abnb_density_data.RData")
+load("../data/derived/shape/london_water.RData")
+pop_density_plot <- abnb_density_data %>%
+  mutate(popden = ifelse(popden == 0, NA, popden)) %>%
+  mutate(abnb_density = ifelse(abnb_density == 0, NA, abnb_density)) %>%
+  ggplot(aes(fill = popden)) +
+  geom_sf(color = NA) + 
+  geom_sf(data = london_water, color = NA, fill = "skyblue", inherit.aes = FALSE) +
+  theme_void() + 
+  annotation_scale(location = "bl", text_family = "serif",) +
+  annotation_north_arrow(which_north = "grid",
+                         location    = "tl",
+                         style       = north_arrow_orienteering(text_family = "serif"),
+                         height      = unit(1, "cm"),
+                         width       = unit(1, "cm")) +
+  scale_fill_viridis_c(option = "inferno") +
+  labs(fill = "Residents<br>per KM^2") + 
+  theme(legend.title  = element_markdown(size = 8),
+        legend.position = "right",
+        text = element_text(family = "serif"))
+pop_density_plot
+```
+
+
+# MOPAC PAS Data
+
+Table A\@ref(tab:tab-2-pas-descriptives) depicts descriptive statistics for the MOPAC PAS data. This includes both the battery of indicators for collective efficacy and the respondent characteristics used to adjust estimates for differences in the characteristics of respondents between neighborhoods.
+
+```{r tab-2-pas-descriptives, echo = FALSE, message = FALSE, tab.cap = "Descriptive statistics: MOPAC Public Attitudes Survey", tab.id = "tab-2-pas-descriptives"}
+load("../data/output/pas_descriptives.RData")
+pas_descriptives %>%
+  select(-missing) |>
+  rename(missing = missing_pct) |>
+  mutate(missing = paste0(round(missing, 2), "%")) |>
+  mutate(Measure = ifelse(battery != "Collective Efficacy", 
+                          str_to_title(str_replace_all(Measure, "_", " ")), Measure)) %>%
+  janitor::clean_names(case = "title") %>%
+  mutate(Measure = case_when(
+    Measure == "Working Ft" ~ "Working Full-Time",
+    Measure == "Working Pt" ~ "Working Part-Time", 
+    Measure == "Student/Education" ~ "Student",
+    Measure == "Victim" ~ "Crime Victim",
+    TRUE ~ Measure
+  )) |>
+  as_grouped_data(groups = "Battery") %>%
+  flextable() %>%
+  set_header_labels(Battery = "") %>%
+  fontsize(size = 10, part = "all") %>%
+  set_table_properties(width = 1, layout = "fixed") %>%
+  width(j = 3:8, width = 0.6) %>%
+  width(j = 2, width = 2) %>%
+  width(j = 1, width = 0.1) %>%
+  merge_h_range(i = c(7,16,25), j1 = 1, j2 = 8) %>%
+  padding(part = "all", padding.left = 1, padding.right = 1, padding.top = 2, 
+          padding.bottom = 2) %>%
+  colformat_double(digits = 2) %>%
+  add_footer_lines("N = 48,093") %>%
+  border_remove() %>%
+  hline_bottom(border = officer::fp_border(width = 1), part = "body") %>%
+  hline_top(border = officer::fp_border(width = 1), part = "header") %>%
+  hline_top(border = officer::fp_border(width = 0.5)) 
+```
+
+All indicators of collective efficacy are ordinal measures with five levels (save for one): 1) "strongly disagree", 2) "disagree", 3) "neither agree nor disagree", 4) "agree", and 5) "strongly agree". One indicator, about whether the local area is a place where people get on well together, has only four levels: 1) "definitely disagree", 2) "tend to disagree", 3) "tend to agree", and 4) "definitely agree".
+
+
+# Measurement Model
+
+Ward-level collective efficacy is estimated using a two-stage process adapted from Matsueda and Drakulich (2016) as described in the main text. This two-stage estimator is analogous to the one-stage 3-level hierarchical linear model used by Sampson et al. (1997), except the first level (within individual) is replaced by a confirmatory factor analysis (CFA). The Sampson et al. (1997) model assumes all indicators have identical loadings and error variances and treats the ordinal indicators as evenly-spaced continuous variables. Our model relaxes all three assumptions by fitting a CFA with an ordinal probit model for ordinal indicators estimated via pairwise maximum likelihood (PML) with full-information maximum likelihood to address missing values. Table A\@ref(tab:tab-3-pas-cfa-descriptives) lists the mean individual-level factor loadings for each indicator across the imputed data sets. Age and residential tenure are also ordinal measures but are treated as continuous in measurement models. Estimates are identical if they are converted to dummy variables. 
+
+```{r tab-3-pas-cfa-descriptives, tab.id = "tab-3-pas-cfa-descriptives", tab.cap = "Collective efficacy factor loadings"}
+load("../data/output/pas_cfa_descriptives.RData")
+pas_cfa_descriptives %>%
+  flextable() %>%
+  width(j = 1, width = 4)
+```
+
+We then extract individual-level empirical Bayes modal factor scores to use as the dependent variable in a two-level (individual and ward) hierarchical linear model with ward-level random intercepts. In this hierarchical linear model, we use the sociodemographic measures as individual-level covariates to adjust for differential composition across wards (see Sampson et al. 1997). The resulting neighborhood-level random intercepts are empirical Bayes estimates of latent collective efficacy adjusted for observable sociodemographic differences between wards, measurement error at the individual level, and missing data, and conservatively shrunken toward the grand mean in inverse proportion to inter-rater reliability (i.e., estimates are pushed toward zero where there are few raters and/or they disagree more in their ratings).
+
+# Monthly Analyses
+
+Table A\@ref(tab:tab-1-month-descp) presents LSOA-month descriptive statistics. As noted in the main text, crime counts are highly skewed with many zeroes.
+
+```{r tab-1-month-descp, ft.arraystretch = 1, tab.id = "tab-1-month-descp", tab.cap = "Descriptive Statistics: LSOA Months"}
+load("../data/output/month_descriptives.RData")
+month_descriptives %>%
+  mutate(name = str_to_title(str_replace_all(name, "_", " "))) %>%
+  janitor::clean_names(case = "title") %>%
+  mutate() |>
+  mutate(Name = case_when(
+    Name == "Asb" ~ "ASB",
+    Name == "Entire Home Apt" ~ "Entire Property",
+    Name == "Violence Harm" ~ "Violence w/' Harm",
+    TRUE ~ Name
+  )) |>
+  flextable() %>%
+  fontsize(size = 10, part = "all") %>%
+  set_table_properties(width = 1, layout = "fixed") %>%
+  width(j = 3:9, width = 0.7) %>%
+  width(j = 2, width = 1.1) %>%
+  padding(part = "all", padding.left = 1, padding.right = 1, padding.top = 2, padding.bottom = 2) %>%
+  colformat_double(digits = 2) %>%
+  add_footer_lines("NT = 207,905 (N = 4,835, T = 43)") %>%
+  border_remove() %>%
+  hline_bottom(border = officer::fp_border(width = 1), part = "body") %>%
+  hline_top(border = officer::fp_border(width = 1), part = "header") %>%
+  hline_top(border = officer::fp_border(width = 0.5)) 
+```
+
+Table A\@ref(tab:tab-4-fixest-estimates) depicts estimates from two-way fixed effects (TWFE) models of LSOA-month Airbnb activity and robbery. In linear models, the outcome is logged robbery counts. In Poisson models, the outcome is crime counts. Separate models are fit with contemporaneous Airbnb effects alone, both contemporaneous and lagged effects, and both effect timings plus an autoregressive term. In accord with the results of our primary ML-SEM specifications, all TWFE specifications find a substantively and statistically significant positive contemporaneous association between Airbnb activity and crime.
+
+```{r, tab-4-fixest-estimates, tab.id = "tab-4-fixest-estimates", tab.cap = "Two-way fixed effects estimates of effects of Airbnb activity on monthly robberies from linear and Poisson models with different lag specifications"}
+load("../data/output/fixest_table.RData")
+fixest_table %>%
+  fontsize(size = 10, part = "all") |>
+  width(j = 1, width = 1.5) %>%
+  width(j = 2:7, width = 0.83) |>
+  border_remove() %>%
+  font(fontname = "Times New Roman", part = "all") |>
+  hline_bottom(border = officer::fp_border(width = 1), part = "body") %>%
+  hline_top(border = officer::fp_border(width = 1), part = "header") %>%
+  hline_top(border = officer::fp_border(width = 0.5)) 
+```
+
+# Unstandardized Estimates
+
+The following plots depict unstandardized estimates, designed to provide readers some sense of the magnitude of the estimated impact of Airbnb activity on the volume of crime.
+
+```{r fig-dpm-unstd, fig.id = "fig-dpm-unstd", echo = FALSE, message = FALSE, fig.height = 6, fig.width = 6.5, fig.cap = "ML-SEM estimated quarterly effects on crime from active Airbnb properties. Unstandardized, 95% confidence intervals", fig.retina = 3}
+load("../data/output/dpm_quarter_fit_unstd.RData")
+
+dv_levels <- c("Robbery", "Burglary", "Theft", "ASB", "Violence", "Harm")
+
+plot_data <- dpm_quarter_fit_unstd %>%
+  select(dv, spec, term, estimate, std.error, conf.low, conf.high) %>%
+  mutate(term = ifelse(str_detect(term, "dp|dlg") & str_detect(term, "t - 1"), "crime (t - 1)", term),
+         across(c(dv, term), ~ str_to_title(str_replace_all(str_remove_all(., "(log_)|(std_)|(dlg_|dp_|abnb_)|(_aw$)?"), "_", " "))),
+         spec = fct_rev(factor(str_to_title(spec), levels = c("Con", "Both", "Lag"))),
+         dv = fct_relevel(str_replace_all(dv, c("Violence Harm" = "Harm", "Asb" = "ASB")), dv_levels))
+plot_data <- plot_data %>% filter(term != "Crime (T - 1)")
+
+ggplot(plot_data, aes(x = estimate, y = spec, group = dv)) + 
+  geom_rect(data = filter(plot_data, dv %in% dv_levels[c(2,4,6)] & spec == "Both"), fill = "black", xmin = -Inf, xmax = Inf,
+            ymin = -Inf, ymax = Inf, alpha = 0.1) +
+  ylab("**Crime type** and *Specification*") + xlab(NULL) +
+  geom_point() + 
+  facet_grid(dv ~ term, switch = "y", scales = "free_y") + 
+  geom_errorbarh(aes(xmin = conf.low, xmax = conf.high), height = 0.4, size = 0.2) +
+  geom_vline(xintercept = 0, linetype = "dashed") + 
+  theme_minimal() + 
+  theme(text = element_text(family = "serif"),
+        panel.grid.major.y  = element_blank(),
+        panel.grid.minor.x  = element_blank(),
+        panel.spacing.y =unit(0,"lines"),
+        panel.spacing.x =unit(1,"lines"),
+        strip.placement = "outside",
+        strip.text.y = element_text(face = "bold"),
+        axis.text.y = element_text(face = "italic"),
+        axis.title.y = ggtext::element_markdown())
+```
+
+```{r fig-dpm-diffprops-unstd, fig.id = "fig-dpm-unstd", echo = FALSE, message = FALSE, fig.height = 6, fig.width = 6.5, fig.cap = "ML-SEM estimated quarterly effects on crime from active Airbnb properties. Unstandardized, 95% confidence intervals", fig.retina = 3}
+load("../data/output/dpm_quarter_diffprops_fit_unstd.RData")
+
+plot_data <- dpm_quarter_diffprops_fit_unstd %>%
+  filter(spec == "con") |>
+  select(dv, spec, term, estimate, std.error, conf.low, conf.high) %>%
+  mutate(term = ifelse(str_detect(term, "dp|dlg") & str_detect(term, "t - 1"), "crime (t - 1)", term),
+         across(c(dv, term), ~ str_to_title(str_replace_all(str_remove_all(., "(log_)|(std_)|(dlg_|dp_|abnb_)|(_aw$)?"), "_", " "))),
+         spec = fct_rev(factor(str_to_title(spec), levels = c("Con", "Both", "Lag"))),
+         dv = fct_relevel(str_replace_all(dv, c("Violence Harm" = "Harm", "Asb" = "ASB")), dv_levels))
+plot_data <- plot_data %>%  
+      filter(term != "Crime (T - 1)") |>
+      mutate(dv = fct_rev(dv)) %>%
+      mutate(graybar = ifelse(dv %in% c("Burglary", "ASB", "Harm"), "black", "white"))
+    ggplot(plot_data, aes(x = estimate, y = dv)) + 
+      geom_tile(aes(alpha = graybar), 
+                width = Inf, height = 1, fill = "black") +
+      scale_alpha_manual(values = c("black" = 0.3, "white" = 0)) +
+      ylab("**Crime type**") + xlab(NULL) +
+      geom_point() + 
+      facet_grid( ~ term) + 
+      geom_errorbarh(aes(xmin = conf.low, xmax = conf.high), height = 0.2, size = 0.2) +
+      geom_vline(xintercept = 0, linetype = "dashed") + 
+      theme_minimal() + 
+      coord_cartesian(xlim = c(-0.25, 0.3)) +
+      theme(text = element_text(family = "serif"),
+            panel.grid.major.y  = element_blank(),
+            panel.grid.minor.x  = element_blank(),
+            panel.spacing.y = unit(0,"lines"),
+            strip.placement = "outside",
+            strip.text.y = element_text(face = "bold"),
+            # axis.text.y = element_text(face = "bold"),
+            axis.title.y = ggtext::element_markdown(),
+            legend.position = "none")
+```
+
+# Property Usage
+
+Figure A\@ref(fig:fig-3-usage) depicts model estimates when using our measure of Airbnb usage instead of the count of active properties. Results are similar to our main analyses because usage and active properties are correlated 0.940.^[Interestingly, the correlations are only 0.557 for shared rooms and 0.887 for private rooms but 0.942 for entire homes/apartments---entire homes/apts have very uniform usage.] Note that Ke et al. (2021) used the number of reviews as a proxy for usage while our usage measure is predicted by a proprietary AirDNA algorithm. Estimated quarterly property usage from AirDNA is highly correlated (R >.9) with quarterly counts of reviews, consequently these estimates are essentially unchanged when substituting in review counts as a usage measure.
+
+```{r, fig-3-usage, fig.id = "fig-3-usage", fig.height = 6, fig.width = 6.5, fig.cap = "ML-SEM estimated quarterly effects on crime from estimated property usage. Fully standardized, 95% confidence intervals", fig.retina = 3}
+load("../data/output/dpm_alt_specs/dpm_quarter_usage_fit.RData")
+dpm_coef_plot(dpm_quarter_usage_fit)
+```
+
+# Airbnb Concentration
+
+Routine activity theory and social disorganization both suggest that the concentration of Airbnb properties within neighborhoods may be important above and beyond overall Airbnb activity. On the one hand, likely offenders seeking out suitable unguarded targets may find clusters of Airbnb properties more attractive. On the other hand, if there are many Airbnb properties in a neighborhood, but they are all clustered in a small area, they may exert a less destabilizing effect on social control capacity. To explore the possibility that the effects of Airbnb are conditional on geographic concentration within areas, we calculated  the Airbnb concentration, as measured by nearest neighbor index (NNI). The NNI within a geographic unit is equal the average nearest neighbor distance (ANND) between active properties divided by the mean random distance (MRD). The ANND is the mean of the distance of each property to its nearest neighboring point within the geographical unit. The MRD is the expected average distance between neighbors from a hypothetical random distribution. An interaction term between the NNI and the number of Airbnb properties or Airbnb usage tests for effects of short-term rentals which are conditional on concentration. Neither the NNI and/or the interaction terms were found to be notably predictive of crime and their inclusion had no effect on the main parameter estimates. Examples results for robbery are presented below as the models are computationally intensive to run, requiring more than a full day to run all outcomes and specifications.
+
+```{r, fig-4-dpm-concentration, fig.id = "fig-4-dpm-concentration", fig.height = 3, fig.width = 6.5, fig.cap = "ML-SEM estimated quarterly effects on crime from estimated property usage and nearest neighbor distance between properties. Fully standardized, 95% confidence intervals", fig.retina = 3}
+load("../data/output/dpm_alt_specs/dpm_quarter_nni_fit.RData")
+dpm_coef_plot(dpm_quarter_nni_fit)
+```
+
+
+# Excluding London Zone 1
+
+Figure A\@ref(fig:fig-2-zone1) depicts ML-SEM estimates from the main model specification while excluding the 259 London LSOAs that intersect with the convex hull of Zone 1 transit stations. Put simply, this model excludes the entire dense urban core of London where the number of Airbnb properties is highest---as well as commercial and tourist destinations. As can be seen below, this exclusion does not alter interpretation of the results---i.e., our results are not being driven mainly by the urban core.
+
+```{r, fig-2-zone1, fig.id = "fig-2-zone1", fig.height = 6, fig.width = 6.5, fig.cap = "ML-SEM estimated quarterly effects on crime from active Airbnb properties, excluding London Transit Zone 1. Fully standardized, 95% confidence intervals", fig.retina = 3}
+load("../data/output/dpm_quarter_not_zone_1_fit.RData")
+dpm_coef_plot(dpm_quarter_not_zone_1_fit)
+```
+
+# Spatial Lag
+
+It is possible that Airbnb properties might induce crime by introducing short-term tenants that serve as suitable targets or likely offenders for crime. Tenants, unlike properties, are likely to travel into adjacent LSOAs. Therefore, we may expect a spatial contagion effect whereby the number of active Airbnb properties in an LSOA exerts a criminogenic influence on adjacent LSOAs. This may be tested by augmenting our original quarterly ML-SEM with a spatial lag of Airbnb properties. As figure A\@ref(fig:fig-5-dpm-splag) indicates, the estimated association between spatially lagged rentals and crime is generally statistically insignificant and always substantively insignificant (coefficients are standardized).
+
+```{r fig-5-dpm-splag, fig.id = "fig-5-dpm-splag", echo = FALSE, message = FALSE, fig.height = 6, fig.width = 6.5, fig.cap = "ML-SEM estimated quarterly effects on crime from active Airbnb properties and the spatial lag of active Airbnb properties. Fully standardized, 95% confidence intervals", fig.retina = 3}
+load("../data/output/dpm_quarter_splag_fit.RData")
+dpm_coef_plot(dpm_quarter_splag_fit, scales = "free_x") +
+  scale_x_continuous(
+  limits = ~ c(min(.x), ceiling(max(.x))),
+  breaks = ~ .x[2],
+  expand = c(0, 0)
+) +
+  facetted_pos_scales(x = list(
+  term == "Active Rentals" ~ scale_x_continuous(breaks = c(-0, 0.2, 0.4),
+                                                limits = c(-0.1, 0.45)),
+  term == "Active Rentals (T - 1)" ~ scale_x_continuous(breaks = c(-0, 0.2, 0.4),
+                                                        limits = c(-0.1, 0.45)),
+  term == "Splag Active Rentals" ~ scale_x_continuous(breaks = c(-0.005, 0, 0.005),
+                                                      limits = c(-0.006, 0.006)),
+  term == "Splag Active Rentals (T - 1)" ~ scale_x_continuous(breaks = c(-0.005, 0, 0.005),
+                                                              limits = c(-0.006, 0.006))))
+```
+
+# Policing
+
+It is possible that the relationship between Airbnb activity and crime is spurious due to associations with police deployments, e.g., if police are more heavily deployed to areas attracting tourists resulting in increased detection of crime. While data on police deployments are not available, proactive stops and searches by police may serve as a proxy for intensity of police attention. As a sensitivity test we re-ran our models including the number of stops and searches by Metropolitan and City of London police. As shown below, our results were unchanged, although the analysis period here was slightly shorter than in the main text as London stop data available on data.police.uk begin only in April 2016.
+
+```{r fig-dpm-stops, fig.id = "fig-dpm-stops", echo = FALSE, message = FALSE, fig.height = 6, fig.width = 6.5, fig.cap = "ML-SEM estimated quarterly effects on crime from active Airbnb properties and police stop and search activity. Fully standardized, 95% confidence intervals", fig.retina = 3}
+load("../data/output/dpm_quarter_ss_fit.RData")
+dpm_coef_plot(dpm_quarter_ss_fit, scales = "free_x")
+```
+
+As a second sensitivity test, we re-ran our models using a measure of perceived police patrol frequency from the PAS: "On average, how often do you see the police patrolling on foot, bicycle or horseback in this area? Remember I am talking about the area within 15 minutes' walk from here." Because this measure comes from the PAS, we estimate the models at the ward half-year unit, where reliability in perceptions of patrol frequency is 0.52. Figure A\@ref(fig:fig-dpm-patrols) shows that our ward half-year analyses are unaffected by the inclusion of perceived patrols.
+
+```{r fig-dpm-patrols, fig.id = "fig-dpm-patrols", echo = FALSE, message = FALSE, fig.height = 6, fig.width = 6.5, fig.cap = "ML-SEM estimated half-yearly effects on crime from active Airbnb properties and perceived patrol frequency from MOPAC PAS. Fully standardized, 95% confidence intervals", fig.retina = 3}
+load("../data/output/dpm_half_patrols_fit.RData")
+dpm_coef_plot(dpm_half_patrols_fit)
+```
+
+# Ward Year Estimates
+
+Weak estimates of the association between collective efficacy and crime may be due to incorrectly specified timing of causal effects or attenuation due to unreliability of the neighborhood-level measurement. To test for this, we fit a model on ward-level data aggregated to years. This results in more reliable collective efficacy estimates (0.71) due to the increase in survey respondents---an average of 19 per ward year. Estimates from this model may be seen in figure A\@ref(fig:fig-dpm-year). Here we see collective efficacy associations with crime are moderately stronger than in ward half-year models. In contrast, we see weaker associations between Airbnb activity and crime than ward half-year and LSOA-quarter models, which may be indicative of the true causal relationship operating over a narrow time frame. Just as in the analyses presented in figures 6 and 8 in the main body, collective efficacy still does not appear to explain the relationship between Airbnb activity and crime.
+
+```{r fig-dpm-year, fig.id = "fig-dpm-year", fig.height = 6, fig.width = 6.5, fig.cap = "ML-SEM estimated yearly effects on crime from active properties and collective efficacy. Fully standardized, 95% confidence intervals", fig.retina = 3}
+load("../data/output/dpm_year_ce_imputed_2lvl_fit.RData")
+dpm_year_ce_imputed_2lvl_fit %>%
+  mutate(term = str_replace_all(term, c("std_ce_imputed_2lvl" = "Collective\nEfficacy",
+                                    "std_abnb_active_rentals" = "Active\nRentals"))) %>%
+  dpm_coef_plot(scales = "free_x") +
+  scale_x_continuous(
+  breaks = c(-0.05, 0, 0.05),
+  limits = c(-0.1,  0.1)
+) 
+```
+
+Next, we present results from the yearly models with property prices added in to mirror the main text half-year models. Results here are similar but more precise for property prices.
+
+```{r fig-dpm-prop, fig.id = "fig-dpm-prop", fig.height = 6, fig.width = 6.5, fig.cap = "ML-SEM estimated half-yearly effects on crime from active properties, collective efficacy, and log median property purchase price. Fully standardized, 95% confidence intervals", fig.retina = 3}
+load("../data/output/dpm_year_ce_medianprop_fit.RData")
+dpm_year_ce_medianprop_fit%>%
+  mutate(term = str_replace_all(term, c("std_ce_imputed_2lvl" = "Collective\nEfficacy",
+                                    "std_abnb_active_rentals" = "Active\nRentals",
+                                    "log_std_rpp_median_price_aw" = "log(Price)"))) %>%
+  dpm_coef_plot(scales = "free_x") +
+  scale_x_continuous(
+  limits = ~ c(min(.x), ceiling(max(.x))),
+  breaks = ~ .x[2],
+  expand = c(0, 0)
+) +
+  facetted_pos_scales(x = list(
+  term == "Active\nRentals" ~ scale_x_continuous(breaks = c(-0.05, 0, 0.05),
+                                                limits = c(-0.09, 0.09),
+                                                labels = c("-0.05", "0", "0.05")),
+  term == "Active\nRentals (T - 1)" ~ scale_x_continuous(breaks = c(-0.05, 0, 0.05),
+                                                limits = c(-0.09, 0.09),
+                                                labels = c("-0.05", "0", "0.05")),
+    term == "Collective\nEfficacy" ~ scale_x_continuous(breaks = c(-0.05, 0, 0.05),
+                                                limits = c(-0.09, 0.09),
+                                                labels = c("-0.05", "0", "0.05")),
+  term == "Collective\nEfficacy (T - 1)" ~ scale_x_continuous(breaks = c(-0.05, 0, 0.05),
+                                                limits = c(-0.09, 0.09),
+                                                labels = c("-0.05", "0", "0.05")),
+  term == "Log(Price)" ~ scale_x_continuous(breaks = c(-0.3, 0, 0.3),
+                                                      limits = c(-0.5, 0.5)),
+  term == "Log(Price) (T - 1)" ~ scale_x_continuous(breaks = c(-0.3, 0, 0.3),
+                                                      limits = c(-0.5, 0.5))))
+```
+
+```{r yearly-ce-abnb, fig.id = "abnb", echo = FALSE, message = FALSE, fig.height = 3, fig.width = 6, fig.cap = "ML-SEM estimated yearly effects on collective efficacy and active Airbnb rentals. Lag of dependent variable included in model but omitted from plot. Fully standardized, 95% confidence intervals", fig.retina =  3}
+
+load("../data/output/dpm_year_ce_abnb_fit.RData")
+dv_ce <- ggplot(dpm_year_ce_abnb_fit %>% 
+           filter(dv == "Collective Efficacy" & !str_detect(term, "Collective Efficacy")), aes(x = estimate, y = spec)) + 
+    ylab("*Specification*") + xlab(NULL) +
+    geom_point() + 
+    facet_grid( ~ term, switch = "y") + 
+    geom_errorbarh(aes(xmin = conf.low, xmax = conf.high), size = 0.2, height = 0.2) +
+    geom_vline(xintercept = 0, linetype = "dashed") + 
+    theme_minimal() + 
+    ggtitle("Outcome:\nCollective Efficacy") +
+    theme(text = element_text(family = "serif"),
+          panel.grid.major.y  = element_blank(),
+          panel.grid.minor.x  = element_blank(),
+          panel.spacing.y =unit(0,"lines"),
+          strip.placement = "outside",
+          strip.text.y = element_text(face = "bold"),
+          axis.text.y = element_text(face = "italic"),
+          axis.title.y = ggtext::element_markdown()) +
+  scale_x_continuous(breaks = c(-0.1, 0, 0.1))
+
+dv_abnb <- ggplot(dpm_year_ce_abnb_fit %>% 
+           filter(dv == "Active Rentals" & !str_detect(term, "Active Rentals")), aes(x = estimate, y = spec)) + 
+    ylab(NULL) + xlab(NULL) +
+    geom_point() + 
+    facet_grid( ~ term, switch = "y") + 
+    geom_errorbarh(aes(xmin = conf.low, xmax = conf.high), size = 0.2, height = 0.2) +
+    geom_vline(xintercept = 0, linetype = "dashed") + 
+    theme_minimal() +
+    ggtitle("Outcome:\nLog of Active Airbnb Rentals") +
+    theme(text = element_text(family = "serif"),
+          panel.grid.major.y  = element_blank(),
+          panel.grid.minor.x  = element_blank(),
+          panel.spacing.y =unit(0,"lines"),
+          strip.placement = "outside",
+          strip.text.y = element_text(face = "bold"),
+          axis.text.y = element_blank(),
+          axis.title.y = ggtext::element_markdown()) +
+  scale_x_continuous(breaks = c(0, 0.01, 0.02))
+dv_ce + dv_abnb
+```
+
+# Half-Yearly Estimates by Property Type
+
+Figure A\@ref(fig:fig-dpm-diffpropsyear) shows estimated contemporaneous associations between Airbnb and crime by property type at the ward half-year level of analysis. Estimates are similar to those seen in the main text, though we see positive relationships with crime are mainly found for entire homes and apartments.
+
+```{r fig-dpm-diffpropsyear, fig.id = "fig-dpm-diffpropsyear", echo = FALSE, message = FALSE, fig.height = 3, fig.width = 6.5, fig.cap = "ML-SEM estimated half-yearly effects on crime from different types of short-term lettings. Fully standardized, 95% confidence intervals", fig.retina =  3 }
+load("../data/output/dpm_half_diffprops_fit.RData")
+
+dpm_coef_plot(dpm_half_diffprops_fit, con_only = TRUE) 
+```
+
+# Perceived Disorder
+
+Disorder may complicate the relationship between Airbnb and crime for a number of reasons. For instance, it may be a source of spuriousness if it is correlated with Airbnbs and crime. Alternatively, it may serve as a mediator if Airbnb activity causes disorder and crime is proximally caused by this disorder. To address this, we respecified our models including a factor capturing latent disorder perceptions. We constructed this using indicators available in all waves of the PAS that ask respondents whether they believe five different forms of disorder are a problem in their neighborhood (from "very big problem" to "not a problem at all"): noisy neighbors, loitering teenagers, litter, vandalism and graffiti, and public intoxication. The estimated ward half-year reliability for this measure is 0.62. We included this perceived disorder measure alongside Airbnb activity. As seen below, disorder is positively related to some forms of crime---in particular robbery and burglary---but its inclusion has no major impact on our main estimates.
+
+```{r fig-dpm-percdis, fig.id = "fig-dpm-percdis", fig.height = 6, fig.width = 6.5, fig.cap = "ML-SEM estimated half-yearly effects on crime from active properties and perceived disorder. Fully standardized, 95% confidence intervals", fig.retina = 3}
+load("../data/output/dpm_half_dis_fit.RData")
+dpm_half_dis_fit %>%
+  mutate(term = str_replace_all(term, c("dis" = "Perceived\nDisorder",
+                                    "std_abnb_active_rentals" = "Active\nRentals"))) %>%
+  dpm_coef_plot(scales = "free_x") +
+  scale_x_continuous(breaks = c(-0.05, 0, 0.05, 0.1),
+                     limits = c(-0.09, 0.14))
+```
+
+# Effects on Collective Efficacy by Property Type
+
+Paralleling figure 7 from the main text, in figure A15 we examine the association between particular types of Airbnb lettings and collective efficacy. In no specifications do active Airbnbs of any type significantly predict collective efficacy.
+
+```{r fig-year-diffprops, fig.id = "fig-year-diffprops", echo = FALSE, message = FALSE, fig.height = 3, fig.width = 6, fig.cap = "ML-SEM estimated half-yearly effects of different types of active Airbnb rentals on collective efficacy. Lagged effects and dependent variable included in model but omitted from plot. Fully standardized, 95% confidence intervals", fig.retina =  3}
+load("../data/output/dpm_half_ce_diffprops_fit.RData")
+ggplot(dpm_half_ce_diffprops_fit %>% 
+         mutate(term = str_replace(term, " Room", "\nRoom"),
+                term = str_replace(term, " Apt", "\nApt")) |>
+           filter(dv == "Collective Efficacy" & !str_detect(term, "Collective Efficacy")), aes(x = estimate, y = spec)) +
+    ylab("*Specification*") + xlab(NULL) +
+    geom_point() + 
+    facet_grid( ~ term, switch = "y") + 
+    geom_errorbarh(aes(xmin = conf.low, xmax = conf.high), size = 0.2, height = 0.2) +
+    geom_vline(xintercept = 0, linetype = "dashed") + 
+    theme_minimal(base_size = 10) + 
+    ggtitle("Outcome:\nCollective Efficacy") +
+    theme(text = element_text(family = "serif"),
+          panel.grid.major.y  = element_blank(),
+          panel.grid.minor.x  = element_blank(),
+          panel.spacing.y =unit(0,"lines"),
+          strip.placement = "outside",
+          strip.text.y = element_text(face = "bold"),
+          axis.text.y = element_text(face = "italic"),
+          axis.title.y = ggtext::element_markdown()) +
+  scale_x_continuous(breaks = c(-0.1, 0, 0.1))
+```
+
+# Property Prices
+
+Figure A\@ref(fig:fig-ce-propvals) shows estimated half-yearly effects of Airbnb activity, collective efficacy, and median property prices. Property prices are significantly related with some forms of crime but their inclusion has no notable impact on coefficients for active rentals or collective efficacy.
+
+```{r fig-ce-propvals, fig.id = "fig-ce-propvals",  echo = FALSE, message = FALSE, fig.height = 6, fig.width = 6.5, fig.cap = "ML-SEM estimated half-yearly effects on crime from active short-term lettings, collective efficacy, and log of median property sale prices. Past-year crime included in model but omitted from plot. Fully standardized, 95% confidence intervals", fig.retina =  3}
+load("../data/output/dpm_half_ce_medianprop_fit.RData")
+dpm_half_ce_medianprop_fit %>%
+  mutate(term = str_replace(term, "std_collective_efficacy", "Collective\nEfficacy"),
+         term = str_replace(term, "log_std_rpp_median_price_aw", "Property\nPrices"),
+         term = str_replace(term, "std_abnb_active_rentals", "Active\nRentals")) %>%
+  dpm_coef_plot() +
+  scale_x_continuous(breaks = c(-0.1, 0, 0.1))
+```
+
+
+
+
+
+
+
+
+
+

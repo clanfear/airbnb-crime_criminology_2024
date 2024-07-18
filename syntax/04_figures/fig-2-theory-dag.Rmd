@@ -1,0 +1,57 @@
+---
+output: pdf_document
+---
+
+```{tikz fig-2-theory-dag, echo = FALSE, fig.id = "fig-2-theory-dag",  fig.cap = "Theoretical model. CE is collective efficacy, O is criminal opportunity, C is crime, A is short-term lettings, U is omitted confounders", fig.ext = 'pdf', fig.width = 12.7/5, fig.height = 10.16/5}
+\usetikzlibrary{positioning}
+\definecolor{black}{HTML}{000000}
+\tikzset{
+    > = stealth,
+    every node/.append style = {
+        draw = none
+    },
+    every path/.append style = {
+        arrows = ->,
+        draw = black,
+        fill = none
+    },
+    hidden/.style = {
+        draw = black,
+        shape = circle,
+        inner sep = 1pt
+    }
+}
+\tikz{
+    \node (a1) at (0,0) {$A_1$};
+    \node[hidden] (u) at (1,-1) {$U$};
+    \node (c1) at (0,2)  {$C_1$};
+    \node (a2) at (2,0)  {$A_2$};
+    \node (c2) at (2,2)  {$C_2$};
+    \node[hidden] (o1) at (0,1)  {$O_1$};
+    \node[hidden] (o2) at (2,1)  {$O_2$};
+    \node[hidden] (s1) at (-1,1) {$\textit{CE}_1$};
+    \node[hidden] (s2) at (1,1)  {$\textit{CE}_2$};
+    \path (a1) edge (o1);
+    \path (c1) edge [bend left=25] (o2);
+    \path (c1) edge [bend left=10] (s2);
+    \path (o1) edge (c1);
+    \path (a2) edge (o2);
+    \path (o2) edge (c2);
+    \path (a1) edge (a2);
+    \path (a1) edge (s2);
+    \path (a1) edge (s2);
+    \path (s2) edge (o2);
+    \path (s1) edge (o1);
+    \path (c1) edge [bend right=27] (a2);
+    \path (s1) edge [bend left=40] (s2);
+    \path (o1) edge [bend left=40] (o2);
+    \path (u) edge (a1);
+    \path (u) edge (a2);
+    \path (u) edge [bend left=45] (s1);
+    \path (u) edge (s2);
+    \path (u) edge (o1);
+    \path (u) edge (o2);
+    \path (u) edge [bend left=60] (c1);
+    \path (u) edge [bend right=60] (c2);
+  }
+```

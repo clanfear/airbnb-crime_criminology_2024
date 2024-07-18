@@ -1,0 +1,538 @@
+---
+output: 
+  officedown::rdocx_document:
+    base_format: "bookdown::word_document2"
+    number_sections: true
+    reference_num: false
+    reference_docx: ref_docs/ref_doc_crim.docx
+    tables:
+      caption:
+        style: Table Caption
+        pre: 'TABLE '
+        sep: ' '
+    plots:
+      caption:
+        style: Image Caption
+        pre: 'FIGURE '
+        sep: ' '
+bibliography: bib/full_library.bib
+csl: csl/apa-7th-edition.csl
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE, fig.path = "./figure/")
+library(tidyverse)
+library(flextable)
+library(sf)
+library(ggtext)
+library(patchwork)
+library(ggspatial)
+source("../syntax/project_functions.R")
+set_flextable_defaults(font.family = "Times New Roman")
+```
+
+# Abstract
+
+Private short-term letting via Airbnb has exploded in the last decade, yet little is known about how this affects neighborhood crime rates. We estimate the association between Airbnb short-term letting activity and six types of police-reported crime in London as well as the intervening mechanism, collective efficacy. We estimate these associations with maximum likelihood dynamic panel models with fixed effects (ML-SEM) using data on Airbnb lettings in 4,835 London neighborhoods observed for 13 quarter-years. We explore mechanisms for the observed effects using multiple lag specifications and by disaggregating lettings into entire properties and spare rooms. In quarterly analyses, Airbnb activity is positively related to robbery, burglary, theft, and violence. This association is mainly contemporaneous, as is consistent with an opportunity mechanism, rather than delayed, as would be consistent with a social control mechanism. These associations are mainly attributable to entire properties rather than rooms. In yearly models, Airbnb activity is negatively related to collective efficacy in the following year, but collective efficacy is only weakly related to robbery or burglary. These results suggest short-term letting contributes to neighborhood crime and these effects are more likely to be attributable to changes in criminal opportunity than erosion of neighborhood social control.
+
+# Introduction
+
+Airbnb CEO Brian Chesky has characterized home sharing as a worldwide "revolution" in travel, and the growth of his company provides ample validation of his assertion [@airbnbBrianCheskyLive2022]. Founded in 2008, Airbnb is active in more than 220 countries and 100,000 cities worldwide, with more than 4 million hosts [@airbnbFormS12020]. Through 2021, 1 billion guests had stayed in an Airbnb listed property [@airbnbBillionthGuestGets2021].
+
+Among the most popular Airbnb markets in the world, if not the most popular, is London. Before the onset of the Covid-19 pandemic, in some London districts more than 10 percent of dwellings were actively listed for rent on Airbnb [@kommendaRevealedAreasUK2020], with 108,000 total listings across all boroughs, representing more than a quadrupling of short-term rental listings over the preceding four years [@boothOutControlOne2020, @tempertonAirbnbHasDevoured2020]. Furthermore, data from the English Housing Survey reveals that an estimated 20% of London households rent out all or part of their home at some point in a given year via short-term lettings on sites such as Airbnb [@ministryofhousingcommunities&localgovernmentEnglishHousingSurvey2019].
+
+Given these statistics, the meteoric rise of Airbnb and its home-sharing competitors may be a sign of a worldwide transformation of the travel industry, and in the nature of housing more generally. Yet despite the phenomenal popularity of Airbnb and the home-sharing economy, relatively little research has examined the potentially detrimental implications. One downside to the growth of Airbnb and the home-sharing phenomenon is a decline in the supply of housing in the long-term rental and sales markets [@barronEffectHomeSharingHouse2021], prompting public concern over rising housing prices and displacement of long-time residents [@sherwoodHowAirbnbTook2019; @kommendaRevealedAreasUK2020].
+
+However, the impact on housing supply may not be the only effect of the growing popularity of Airbnb. Of the limited research on the impacts of Airbnb on neighborhoods, neglected are the implications of Airbnb activity on indicators of community cohesion and safety. The substitution of long-term residents for frequent short-term guests via Airbnb may increase crime by undermining community cohesion and destabilizing neighborhoods. Indeed, a robust literature in sociology reveals that residential turnover and neighborhood instability hinder informal social control of neighborhoods by residents and provide fertile ground for criminal activity [@sampsonNeighborhoodsViolentCrime1997; @shawJuvenileDelinquencyUrban1942]. And beyond the impact on crime through a neighborhood’s reduced capacity for informal social control, tourists renting an Airbnb may be more disposed to anti-social behavior---such as noise disturbances, vandalism, and public drunkenness---than longer-term residents of a dwelling [@cromartyGrowthShorttermLettings2020], as well as more vulnerable to predatory victimization---such as robbery and theft [@wrightArmedRobbersAction1997].
+
+Accordingly, the present study tests whether short-term lettings are associated with a subsequent change in community crime rates in London. We ask: (1) Does growth in short-term lettings through platforms such as Airbnb contribute to an increase in crime? (2) If so, do short-term lettings promote crime broadly, or is the association limited to particular types of offenses? (3) And do any effects on crime come from all properties, or only particular types of lettings? (4) Finally, if Airbnb lettings are associated with neighborhood crime, is it because lettings inhibit social cohesion and expectations for social control?
+
+We are aware of only one other criminological study that models the effect of short-term letting activity on neighborhood crime; @keAirbnbNeighborhoodCrime2021 find that elevated short-term letting activity increases violence in Boston but not public social disorder. The authors suggest that the increase in violence is due to destabilization of affected neighborhoods, however the authors were not able to examine intervening mechanisms, as we do here. Given limitations in available measures and the size of the sample of Boston neighborhoods, Ke et al. conducted year-by-year analyses, which may not match the pace of underlying causal processes, and did not examine different types of short-term lettings. It is also uncertain if the effects of short-term lettings observed by Ke et al. will generalize to larger cities or cities outside the United States, where 86% of Airbnb's hosts are located [@airbnbFormS12020]. The present study uses data from London, a city with over 10 times the population of Boston. Moreover, the larger size of London provides greater statistical power and permits the use of finer temporal units---quarter-years. We also use more granular measures to examine heterogeneity across types of short-term lettings (e.g., entire properties or spare rooms) and types of crime (e.g., burglary or violence causing harm).
+
+# Mechanisms Linking Short-Lettings and Crime
+
+In *The City*, Robert Park [-@parkCity1967, p. 107] lamented that "every new device that affects social life and the social routine is a disorganizing influence." Park, of course, was writing about late 19th and early 20th century inventions such as the automobile. And while renting out spare rooms to temporary lodgers has long been a potential source of extra income for urban dwellers, it is fair to say that Park could not have envisioned the volume and frequency of room and home rentals facilitated by the "sharing economy" of the 21st century. Nevertheless, the point is that cities and neighborhoods are dynamic, and the ways they change can alter the volume and distribution of would-be offenders and victims as well as undermine, or in some cases facilitate, social control of crime.
+
+With respect to Airbnb activity as a source of neighborhood change, the effect of short-term lettings on crime, if any, depends upon the causal mechanism. We consider here two complementary theoretical frameworks that suggest causal mechanisms by which short-term lettings may influence crime: routine activity theory and social disorganization.
+
+### Routine Activity
+
+Routine activity theory describes rates of predatory crimes---such as robbery, assault, and burglary---as the result of convergences of three necessary elements: suitable targets, likely offenders, and the absence of capable guardians [@cohenSocialChangeCrime1979]. Rates of predatory crimes will change whenever the concentration of one or more elements changes. Some elements are specific to particular crimes---an unoccupied home or business is a suitable target for burglary but not violence, as there is no one present to victimize---while other elements may be general in their effect---a police officer standing on a corner may serve as a capable guardian against all crimes while present. To understand the influence of Airbnb letting activity on crime, we should examine how such lettings may alter the amount of activity that takes place in a space and whether short-term lettings influence the volume and convergence of would-be offenders, victims, and guardians.
+
+
+Research suggests areas with larger ambient populations have higher rates of predatory crimes [@brantinghamEnvironmentalCriminology1991]. This relationship is unlikely to be linear, however: predatory crime is high where targets are abundant but bystanders---potential guardians---are not ever-present (Angel,1968; St. Jean, 2007, p. 156). If short-term lettings increase the number of people present in a neighborhood, we would expect increases in the number of crimes in public spaces, unless the increase is sufficient to make it difficult to engage in crime unobserved. This seems likely if most short-term lettings are spare rooms which would otherwise be unoccupied, and they are numerous relative to the number of households (i.e., they could account for a significant---but not massive---increase in ambient population). However, most short-term lettings are entire properties rather than spare rooms, accounting for 52% of London's Airbnb properties and 70% of their guest capacity, according to the data employed in our analysis. If Airbnb activity mainly replaces long-term residents with transient residents, it should not change the size of the population as much as it changes the composition of the population. As many Airbnb rentals are not owner-occupied and rarely have 100% occupancy, short-term letting activity may even decrease the average number of daily residents in a neighborhood, particularly mid-week when tourism is less frequent. Nevertheless, from the perspective of routine activities, per capita crime rates might increase if short-term residents are qualitatively different from long-term residents in ways that promote crime.
+
+
+Among the three components emphasized in routine activity theory, Airbnb lettings would seemingly have more influence on the number of capable guardians and especially the availability of suitable targets. With respect to capable guardians, Airbnb guests may be less inclined to engage in social control activities---such as calling the police about an observed crime---due to their weaker attachment to the neighborhood and unfamiliarity with residents and their activities. And for tourists in a location, they may be inside a property a smaller fraction of each day than a long-term resident, thereby leaving the property more susceptible to burglary. These effects should be observed mainly for entire rented properties, because spare room occupants are not replacing permanent residents who may act as capable guardians and spare room occupants may further act as additional guardians against burglary. Further, resident Airbnb hosts have additional incentives to be vigilant guardians as negative reviews may impact their hosting viability.
+
+
+With respect to suitable targets, short-term residents may be easier targets for predators for crimes such as robbery and assault to the extent that they are engaged in more activity outside the home than a long-term resident [@hindelangVictimsPersonalCrime1978]. Even if the amount of outside activity for an Airbnb tenant is little different than a long-term resident, differences in the types of activity or awareness of risky places and situations may put them at greater risk of victimization. For example, frequenting a pub or bar, or stopping to look at a map on a smartphone with little awareness of would-be thieves or robbers [@wrightArmedRobbersAction1997], may escalate risk of victimization. Of course, if Airbnb rentals are merely a substitute for hotel accommodation in a given area, then the volume of potential victims in the form of tourists may not change [@zervasRiseSharingEconomy2017]. Yet Airbnb's business model is explicitly focused on opening up hosts' residential communities to guests (i.e., residential areas often lacking hotel accommodation), implying that residential areas should indeed have more tourists to serve as potential victims. While we expect Airbnb guests in all property types to more often be suitable targets than residents, it is possible those renting entire properties may be more suitable targets than those renting only rooms if choice of property type is correlated with the wealth of guests.
+
+Whereas we have emphasized the possible consequences for the availability of victims and guardians, Airbnb activity may also increase the relative volume of certain types of offenders. For instance, news stories abound about Airbnb guests vandalizing or otherwise damaging the property they are renting [e.g., @lazzaroAirbnbBribesHost2017; @quinnManWhoLet2016]. Yet, given the sheer volume of Airbnb rentals, with more than one billion guest arrivals worldwide through 2021, it would be surprising if there weren't some incidents of vandalism. On this point, Airbnb reported that of the 40 million guests in 2015, damage to dwellings in excess of $1,000 occurred just 0.002 percent of the time []@gallagherAirbnbStoryHow2018]. 
+
+As for behavior besides vandalism, here too there have been reports suggesting that Airbnb guests may be more prone to noise disturbances and anti-social behavior than long-term residents [@cromartyGrowthShorttermLettings2020]. Indeed, Airbnb guests have fewer incentives to abide by neighborhood social norms than longer-term residents because they are not enmeshed in local social networks. Recognizing these risks, Airbnb engages in a variety of prevention activities, including spot checks on reservations and the employment of a large team of data scientists tasked with predicting overly risky guests (Gallagher, 2017).^[Whether such prediction tools are potentially discriminatory is an important consideration.] Additionally, in the US and India, Airbnb conducts background checks on all users. Moreover, Airbnb’s review system, which allows guests to not only review hosts and their dwelling, but also allows hosts to review the guests, provides a mechanism for reducing the possibility for renting to criminally inclined guests---although a savvy offender could find ways to create alias profiles on Airbnb, and hosts may be reluctant to give criminally-inclined guests a bad review for fear of retribution. On occasions when prospective guests may be tempted to rent an Airbnb to host a party, such as New Year's Eve, Airbnb has taken measures to thwart such behavior, such as prohibiting one night bookings [@airbnbAirbnbCrackGlobally2022]. Hence, while there are certainly examples of Airbnb guests engaging in criminal behavior, over time the company has put in place several safeguards to reduce the risk of opening up hosts’ dwellings to potential offenders. 
+
+In summary, relative to longer-term residents of a property, Airbnb guests may be less inclined to serve as guardians and they may be easier targets for victimization. In fact, Airbnb activity may increase the presence of likely offenders through information effects. For example, if likely offenders believe Airbnb rentals or renters are suitable targets and become aware that many properties in an area are Airbnb rentals, they may be more likely to visit these areas looking for easy unguarded targets. Finally, there is also some possibility that some guests may be inclined to engage in criminal conduct themselves. 
+
+### Social Disorganization
+
+Turning to our second theoretical framework, a transient community with frequent turnover of residents may undermine the social control capacity of the neighborhood. Indeed, an enormous body of research in criminology points to "social disorganization" as one of the key correlates of both low-level and more serious forms of neighborhood crime [@shawJuvenileDelinquencyUrban1942]. Social disorganization refers to the breakdown of local neighborhood institutions (e.g. schools, churches, and charitable and volunteer organizations), which inhibits the ability of communities to maintain social order and control. A related body of research shows that "collective efficacy"---an operationalization of social control capacity characterized by social cohesion and expectations that neighbors will engage in acts of social control---is vital for lowering neighborhood crime rates [@sampsonNeighborhoodsViolentCrime1997].
+
+Critical to the current discussion, residential turnover and instability in the neighborhood breeds social disorganization and undermines collective efficacy. Residential instability inhibits social organization through two mechanisms. First, maintaining stable institutions is difficult when members are turning over rapidly. Second, if residents believe they will only be in the neighborhood for a short period of time, they are unlikely to devote time and resources to improving the neighborhood or becoming active in its social life. Indeed, research evidence convincingly reveals that long-term residents of neighborhoods are much more civically engaged and more likely to participate in their communities along numerous dimensions, including working collectively to improve the neighborhood, participating in local organizations, volunteering, and visiting socially with neighbors [@mccabeNoPlaceHome2016]. Hence, in this model, it is not necessarily the Airbnb guests who would be engaging in criminal activity, serving as suitable targets, or acting as incapable guardians; rather the frequent turnover of occupants may destabilize the neighborhood and weaken the informal social control potential of a neighborhood by undermining community investment and involvement. By destabilizing the neighborhood, a high level of Airbnb activity in a neighborhood may have adverse impacts for a variety of crime types. Social disorganization and routine activity theory are complementary in that social disorganization theory explains variation in social control capacity---a key neighborhood-level factor influencing the likelihood of capable guardianship being present in situations.^[Social disorganization also describes processes of socialization and thus concentration of likely offenders as well. Later developments of routine activity theory subsume this under guardianship by including as guardians individuals ("handlers") who prevent offending because likely offenders believe offending might damage their ties to those guardians [see @hirschiCausesDelinquency2002]. This argument follows from the control theory reformulation of social disorganization [@kornhauserSocialSourcesDelinquency1978].]
+
+We expect different types of Airbnb properties to exhibit different effects on crime via social disorganization. Consider the difference between a spare room in an otherwise occupied home that is used as a short-term letting and an entire property used as a short-term letting. When a spare room is rented out, it will result in one or more additional non-residents in the area, but it does not produce residential instability---and may even promote stability if it provides financial resources to homeowners. Contrast this with an entire property that is rented out. Assuming the alternative to a short-term letting is a longer-term letting, entire rented properties represent the replacement of permanent residents with short-term residents. Hence, we would expect the lettings of full dwellings to have more of an impact on social disorganization than the renting of spare rooms. 
+
+### Alternative Perspectives
+
+Thus far we have described complementary theoretical frameworks leading us to expect an increase in crime as short-term letting activity increases. Nevertheless, in the interest of a balanced view, it is relevant to consider the possibility that private short-term lettings may reduce crime. For instance, the additional income earned by hosts can help offset the costs of maintaining the property to a suitable standard [@cromartyGrowthShorttermLettings2020; @georgiecoshHousingResearchNote2020], and thereby maintain the property values and tax base in a neighborhood more generally. In fact, Airbnb’s 2021 annual survey of its hosts in the United States reveals that 53 percent of hosts indicated that they used the income generated by renting out their homes on Airbnb to pay for home improvements---although more than 20 percent of survey respondents indicated that they used the income to avoid eviction or foreclosure [@airbnbNewSurveyHosts2022]. While evidence from criminologists about the relationship between neighborhood disorder and crime is mixed [@lanfearBrokenWindowsInformal2020; @obrienLookingBrokenWindows2019], public health research convincingly reveals that efforts to remediate dilapidated properties does reduce the incidence of crime [@kondoNeighborhoodInterventionsReduce2018; @macdonaldChangingPlacesScience2019]. Hence, to the extent that demand for, and income from, short-term lettings facilitates the maintenance of properties and therefore property values, crime rates may actually decline, or at least remain stable.
+
+### Hypotheses
+
+Despite the possibility that Airbnb activity may help maintain property conditions and values, theoretical considerations lead us to hypothesize that Airbnb activity is positively associated with a range of crime types (Hypothesis 1). This increase will be explained by the convergence of suitable targets and motivated offenders in the absence of capable guardianship, where the latter will be influenced by residential turnover. We expect these effects will differ by crime type as opportunities influenced by Airbnb activity may be specific to particular types of crime (e.g, an unoccupied house facilitates burglary but not robbery). It may be the case that any positive association between Airbnb activity and crime only occurs in areas where Airbnb rentals pass some tipping point in volume. Hence, in a sensitivity analysis we will examine whether findings related to Hypothesis 1 hold in areas without a critical mass of Airbnb activity.
+
+As discussed earlier, the letting of rooms may temporarily increase the number of suitable targets in a neighborhood, whereas renting of entire homes may foster residential turnover and undermine social control and guardianship. Therefore, examining the association between different types of Airbnb accommodation and crime is a means to understand the mechanisms underlying any effect of Airbnb activity on crime rates. We expect relatively larger effects for rentals involving entire homes and apartments than renting out shared or spare rooms, as the former represents a more dramatic change to pre-existing neighborhood situations in our view (Hypothesis 2). Finally, and consistent with our second hypothesis, we expect that Airbnb activity will be negatively correlated with neighborhood collective efficacy (Hypothesis 3), and that the expected positive association between Airbnb activity and crime is partly attributable to a decline in collective efficacy (Hypothesis 4).
+
+# Data
+
+Our primary analyses use two data sources. Measures of Airbnb short-term lettings were obtained from data collected by AirDNA and made available by the Consumer Data Research Centre (CDRC) in the UK. AirDNA is a data provider that continually scrapes the Airbnb website to calculate availability and usage of Airbnb properties and distributes these data for commercial purposes. AirDNA data have been used in numerous recent academic studies focused on Airbnb [e.g., @garatealvarezShortTermPropertyRental2022; @toddAssessingImpactsAirbnb2022; @zhangDemandInteractionsSharing2022]. The AirDNA data archived with the CDRC are point-level observations of individual properties with information on the number of days occupied or available per calendar month. These data span the period of November 2014 to May 2018.
+
+We aggregated these point-level data to the lower layer super output areas (LSOA) to approximate neighborhoods. LSOAs are United Kingdom census administrative boundaries, similar to but smaller than US census tracts. In London, 95% of LSOAs have populations between 1250 and 2300, with an average of approximately 1700. We operationalize short-term lettings in three ways, using calendar-quarters as our temporal unit of analysis: (1) The count of active rental units in a given LSOA, i.e. units recorded as available or occupied at any point during the quarter; (2) separate counts of entire apartments or homes, private rooms, and shared rooms that are active, respectively; and (3) Airbnb usage, a proxy for concentration of renters in an area, calculated as the number of beds in the unit times its occupancy rate.^[Occupancy rates are calculated using a proprietary algorithm that AirDNA claims displays high accuracy (\>= 95%). See <https://www.airdna.co/airdna-data-how-it-works> for some information on their process and classification accuracy. @keAirbnbNeighborhoodCrime2021 used reviews as a proxy for renter concentration. In the AirDNA data we use, reviews are correlated 0.46 with usage at the property level but 0.93 with usage at the LSOA level.]
+
+As discussed earlier, the type of properties most likely to impact the social organization of neighborhoods are entire properties dedicated to short-term letting. Most private or shared rooms and full properties only intermittently available are presumably otherwise occupied. A basic descriptive question is whether there are enough dedicated Airbnb rental properties, relative to non-rental households, to significantly disrupt neighborhood social organization. We can divide the number of active listings for entire properties by the number of households in each neighborhood to get a measure of the balance between short-term rentals to long-term residents. If we average over all quarterly observations of all 4835 LSOAs in London, the 95th percentile of LSOAs features roughly 1 Airbnb per 20 households (0.049) and the median LSOA features 1 Airbnb per 33 households (0.030). At the most extreme, one LSOA, in Soho, a vibrant entertainment and theater district, averages 0.417 Airbnbs per household with a high in a single calendar-quarter of 0.664---714 dedicated properties out of only 1,076 households. At these more extreme values, it is highly plausible, if not likely, that short-term lettings will impact neighborhood social dynamics and thus crime.^[This ratio can also fluctuate greatly from quarter to quarter---as much as 0.159---but because most LSOAs have very few Airbnbs, the median quarterly change is only 0.001, corresponding to roughly a single unit change between quarters.]
+
+
+As opportunities generated by Airbnb may be specific particular forms of crime, we measure crime using six categories of police-recorded offences: robbery, burglary, theft, anti-social behavior, any violence, and violence with bodily harm.^[Anti-social behavior includes rowdy or nuisance behavior as well as public drinking and trespassing. See <https://www.met.police.uk/advice/advice-and-information/asb/asb/antisocial-behaviour/what-is-antisocial-behaviour/>.] These measures come from two sources: the London Datastore (data.london.gov.uk; hereafter DLG) and the Home Office's open data portal for all of England, Wales, and Northern Ireland (data.police.uk; hereafter DPU). DLG data feature disaggregated crime categories such as violence resulting in bodily harm, but are missing a small number of LSOA-months of data. DPU data are more complete, featuring fewer missing values and higher overall counts, but do not disaggregate from major crime categories (e.g., violence of any kind) and do not have a specific theft category. DPU data are also subject to a location anonymization process that shifts coordinates of crimes to nearby street centerpoints. LSOA level counts of anonymized data are very similar to the original source data [@tompsonUKOpenSource2015]. DLG data are only provided aggregated to the LSOA level. Where crime types are comparable (e.g., robbery, burglary), DPU and DLG data exhibit a correlation of approximately 0.9 at the LSOA level. We use data from DLG to fill in values in the DPU data for three LSOAs in Lambeth, Tower Hamlets, and Islington that were missing all observations. Because the DLG measures are disaggregated categories, DPU data cannot be used to fill in missing values in DLG data. Regardless, the number of missing values is fewer than 0.5% for either theft or violence with bodily harm. These few missing values were imputed with linear interpolation.^[Model results are indistinguishable when excluding these interpolated values.]
+
+TABLE 1 ABOUT HERE
+
+Table \@ref(tab:tab-desc) contains descriptive statistics for the data aggregated to LSOA quarters (three-month periods). The first thing to note in the table is the uneven distribution of active short-term lettings. On average, a total of 11 properties are actively available for short-term lettings via Airbnb or similar providers in a given calendar-quarter per LSOA, with a median of four. However, the range is zero to almost 450 active properties in an LSOA. Figure \@ref(fig:fig-1-map) depicts the spatial clustering of short-term lettings in London. Short-term lettings are highly concentrated in the center of London, as indicated by the brightly colored LSOAs---much more concentrated than London's residential population (see figure A1 in appendix for comparison). Despite this high concentration in the city center, short-term lettings were recorded in the great majority of all London LSOAs (4,644; 96.0%) during the study period. The scattered gray LSOAs are the few (191; 4.0%) with no recorded short-term lettings in the study period. As table \@ref(tab:tab-desc) shows, police-reported crime reported crimes display a similar concentration, with a minimum of zero for all forms of crime under examination but a maximum as high as 1,300 for theft.
+
+FIGURE 1 ABOUT HERE
+
+
+
+To test our third hypothesis, we construct a measure of collective efficacy---social control capacity---using data from the Mayor of London's Office for Policing and Crime (MOPAC) and London Metropolitan Police Service Public Attitudes Survey (PAS). The PAS is a quarterly representative survey of 100 randomly-selected respondents aged 16 and over in each of London's 32 boroughs---12,800 respondents per year across London as a whole---used to measure confidence in police and perceptions of neighborhood conditions such as crime, disorder, and, importantly, perceived social cohesion and expectations for social control. These data have previously been applied by social scientists in research on neighborhood collective efficacy and crime [e.g., @brunton-smithBridgingStructurePerception2014].
+
+
+We estimate collective efficacy using responses to eight PAS questions that measure perceived cohesion and trust between residents and expectations that residents will behave properly in public spaces and sanction those who do not. These questions are similar to those used to measure collective efficacy in other major cities across the world [@sutherlandCollectiveEfficacyDeprivation2013]. We aggregated these survey data, as well as the Airbnb and crime data, to yearly observations of electoral wards to examine the role of collective efficacy---social control capacity---in relating Airbnb properties to crime.^[LSOA-level crime data were areal weighted to wards because the boundaries are incongruent, though nearly all LSOAs lie entirely or almost entirely inside a single Ward. The correlation between DPU crime counts assigned to wards by geolocation and DLG crime counts areal weighted to wards from LSOAs is between 0.98 and 1.00.] Ward-years were used here to obtain sufficient counts of PAS survey respondents within each unit to reliably estimate collective efficacy. Wards are larger than LSOA units, at an average population size of approximately 14,000. The mean number of PAS respondents per ward-year is 19.^[The PAS data are unsuitable for estimating LSOA-level ecological measures because the mean number of PAS respondents per LSOA-year is only 3 and 21% of LSOA-years have no respondents. This produces unreliable LSOA-year collective efficacy estimates (reliability = 0.42), which would severely attenuate estimated associations [@raudenbushHierarchicalLinearModels2002].] The 25 wards of the City of London, the small (under 3 square kilometers) historic center of Greater London where the financial district and several tourist attractions are located, were excluded because it is not under the jurisdiction of the Metropolitan Police Service.^[The City of London has under 10,000 residents and is composed of only 6 LSOAs but has 25 electoral wards because businesses are granted votes in proportion to the number of employees they have. Quarter-year analyses are unchanged by excluding these six LSOAs.] See the appendix for descriptive statistics from the PAS.
+
+
+We use a two-stage multilevel measurement model adapted from @matsuedaMeasuringCollectiveEfficacy2016 to estimate neighborhood-level collective efficacy from these survey responses [see also @sampsonNeighborhoodsViolentCrime1997]. This method adjusts estimates for respondent race, residential tenure, age, employment status, home ownership, gender, and criminal victimization in the past year (see the appendix for a detailed description of our estimation method). Missing values in the survey data were imputed by chained equations with random forests using the R package miceRanger [@wilsonMiceRangerMultipleImputation2021].^[Ten imputed datasets were generated using 5 iterations of 100 trees with mean matching. Results are nearly identical using listwise deletion of missing cases or a 3-level hierarchical linear model without an individual-level CFA.] Mean ward-year reliability is 0.71. This reliability is close to the 0.68 reliability found by @sampsonSystematicSocialObservation1999 in census tracts in Chicago. There were no survey respondents in 8 ward-years resulting in a small number of missing values for collective efficacy (0.32% of cases). These were handled via full-information maximum likelihood during model estimation. See the appendix for an overview of the measurement model, a list of indicators with factor loadings, survey data descriptive statistics, and a description of additional data sources used in sensitivity tests. Table \@ref(tab:tab-year-descp) presents descriptive statistics for the ward-year data. It is noteworthy that PAS respondents generally report higher and less variable perceptions of collective efficacy (LSOA raw scores: $\bar{x} = 3.77$, $sd = 0.18$) than seen in major US cities such as Chicago (raw scores $\bar{x} = 3.47$, $sd = 0.36$ for Chicago neighborhoods) [@earlsProjectHumanDevelopment1999]. If average collective efficacy is relatively uniform and high across the city, it may be less relevant for predicting variation in crime [see @brunton-smithHowCollectiveCollective2018].
+
+TABLE 2 ABOUT HERE
+
+# Methods
+
+Turning to methods, we first elaborate the causal model implied by our theoretical frameworks. Then, we describe our strategy to overcome the estimation challenges that arise from unique features of the causal model.
+
+## Causal Model
+
+The directed acyclic graph in figure \@ref(fig:fig-2-theory-dag) summarizes our expected neighborhood-level causal model from theories of routine activity and social disorganization. For simplicity, we show two time periods, although we have 13 time periods (calendar-quarters) in the first part of our analysis that tests hypotheses 1 and 2 and 4 time periods (years) in the second part that tests hypotheses 3 and 4. In this diagram, $A_1$ represents short-term lettings at time 1, and $A_2$ represents lettings at time 2. Similarly, $C_1$ and $C_2$ represent crime. In addition, we have five other variables which are circled to indicate they are latent. $S$ is social control capacity in each time period and $O$ is criminal opportunities in each time period, i.e. the rate of convergences of likely offenders and suitable targets in the absence of capable guardians. Lastly, $U$ represents unobserved variables that influence any variable in the system.
+
+FIGURE 2 ABOUT HERE
+
+
+This diagram is complex but it encodes the key relationships described by the theories under consideration. For example, social disorganization theory suggests residential instability caused by short-term letting will, over time, reduce the social control capacity of neighborhoods ($A_1 \rightarrow S_2$). Reduced social control capacity increases the number of available criminal opportunities because of the lack of guardianship ($S_2 \rightarrow O_2$), which increases rates of crime ($O_2 \rightarrow C_2$). Similarly, rates of crime---particularly violent crime---reduce social control capacity ($C_1 \rightarrow S_2$), which impacts later crime through the same pathway. One pathway included here, which is not often considered in these theories, is the path from crime to future opportunities ($C_1 \rightarrow O_2$). If successful offending leads individuals to seek out opportunities in the same area in the future, it will increase the presence of likely offenders and thus opportunities for crime ($C_1 \rightarrow O_2$). This will cause crime to persist over time.
+
+This model also encodes potential effects of crime on the supply of Airbnb properties ($C_1 \rightarrow A_2$). Property owners may not rent out an existing property or purchase a new property for renting if they believe prospective Airbnb users and other short-term renters would be averse to renting in the area due to crime.^[One could also imagine the opposite effect where a property owner turns a property they previously occupied into a rental due to changing character of the neighborhood.] Finally, this model includes pathways from unmeasured confounders ($U$) to all other factors in the model. These confounders include relatively time-stable characteristics of neighborhoods, for example, features of the built environment that make areas both attractive for short-term lettings and conducive to crime, such as destinations for tourism, shopping, or events. Areas with these amenities will elevate rates of certain types of crime due to increased opportunities: more targets and potential offenders with weaker social control [@kirkNeighborhoodChangeCrime2010; @browningCommercialDensityResidential2010]. These features are mostly time-stable in our analytical frame due to the short duration of observation---just a few years. $U$ also may include time-varying confounders, however, such as transient events that both increase Airbnb activity and crime. For example, major sporting events might attract large numbers of visitors using short-term lodging as well as promote certain forms of crime.
+
+In the present study we have only limited data on social control capacity and no data on criminal opportunity. An important aspect of this diagram is that social control ($S$) and opportunity ($O$) function as mediators for Airbnb properties ($A_t$) and crime ($C_t$). If we remove these mediators from the model, we arrive at the causal diagram in figure \@ref(fig:fig-3-model-dag)---a cross-lagged panel model with contemporaneous total effects ($A_t \rightarrow C_t$). In the following section, we describe our approach for estimating this model. While our modeling approach adjusts for time-invariant confounders, we cannot rule out time-varying confounders. As a result, we examine the sensitivity of our results to some omitted time-varying variables in the following section. We have excluded spatial effects (e.g., of Airbnb usage on crime in adjacent neighborhoods) from these diagrams as the corresponding DAGs are difficult to interpret [see @ogburnCausalDiagramsInterference2014]. Spatial effects were also excluded from the primary models as their inclusion had no impact on the results but greatly increased computational complexity.
+
+FIGURE 3 ABOUT HERE
+
+## Estimation Strategy
+
+There are three features of the theoretical model in the last section that present challenges for estimation: 1) Both contemporaneous and lagged effects of Airbnb properties on crime---which likely vary across different types of crime; 2) Effects of past crime on the future volume of active Airbnb lettings; 3) Unobserved, relatively time-stable features that impact the volume of active Airbnb lettings and crime. We address these challenges by estimating the effects of short-term rentals on counts of six types of crime using Allison et al.'s (2017) maximum likelihood structural equation (ML-SEM) fixed-effects dynamic panel method.^[While we use crime counts as an outcome, our results are identical using rates calculated as counts divided by LSOA population.] The ML-SEM method is closely related to the Arellano-Bond (AB) method commonly used in economics [@arellanoAnotherLookInstrumental1995; @arellanoTestsSpecificationPanel1991] but is more efficient, more flexible (e.g., relaxes time invariance of error terms), and does not suffer from challenges regarding instrument selection or proliferation of weak instruments in long panels [see @roodmanNoteThemeToo2009].
+
+The first and most significant challenge is that the timing of the effect of Airbnb properties on crime is uncertain. On the one hand, if short-term rentals influence crime via opportunity mechanisms implied by routine activity theory (e.g., attracting offenders or providing targets), the effect should be immediate. On the other hand, if short-term rentals influence crime by weakening social cohesion and collective efficacy, the effect should be lagged---Airbnb activity generates crime in later periods. The rate at which short-term rentals are affected by crime is also ambiguous, but we would expect it to operate less quickly than the opposite path, as renting is likely "sticky" behavior as renters must become aware of crime before it will impact their behavior and properties take time to sell or repurpose. Adjudicating between different causal lags is difficult, in particular when concerned about endogeneity, and incorrectly specifying the lag of causal effects may produce misleading results---even estimates in the opposite direction of the true effect [@vaiseyWhatYouCan2017].
+
+We address this challenge by fitting three different ML-SEM specifications: 1) only contemporaneous effects of short-term rentals, 2) only lagged effects, and 3) both contemporaneous and lagged effects. The specification with both effects permits adjudicating between the causal effect timings, and avoids misleading estimates caused by lag misspecification [see @leszczenskyHowDealReverse2022]. This third specification, however, makes the assumption there is no contemporaneous reciprocal effect of crime back on short-term rentals (i.e., simultaneity). If this assumption is violated, the estimated effect of short-term rentals on crime will be biased. This simultaneity problem does not affect the lag-only model because it enforces temporal order.^[Specifications with additional lags over one period were strongly rejected by BIC and likelihood ratio tests. ML-SEM also makes the assumption there is no serial correlation in the error terms of the outcomes across periods. If serial correlation exists, it may bias estimates, but this is less severe for models including both contemporaneous and lagged effects [see @leszczenskyHowDealReverse2022, Appendix F]] The strongest evidence for a criminogenic effect of short-term rentals on crime would come from consistent positive effects across all three specifications.
+
+The second challenge is that the causal factor of interest---the volume of active Airbnb properties---may be affected by past outcomes---crime. Conventional panel data estimators such as the two-way fixed effects (TWFE) estimator assume strictly exogenous regressors: All predictors must be uncorrelated with error terms, even those in preceding periods. These estimators produce biased estimates if the treatment of interest (e.g., Airbnb properties) is affected by past outcomes (e.g., past crime), as described by our model ($C_1 \rightarrow A_2$) [@imaiWhenShouldWe2019]. Like the AB method, the ML-SEM method relaxes this assumption by permitting outcomes to be correlated with later regressors.^[We also tested a specification including spatial lags of both crime and Airbnb properties in the prior quarter. These spatiotemporal lag terms were not significant and did not affect the other estimates.]
+
+The last challenge is that we expect characteristics of locations (e.g., tourist attractions, street layouts, commercial destinations) to affect the frequencies of both crime and the Airbnb properties. The ML-SEM method models these time-stable unobserved effects using a latent variable that is correlated with all regressors and features the outcomes (i.e. crime at each time point) as indicators with loadings of 1. This adjusts for unit-specific unobservables in a manner equivalent to conventional fixed-effect estimators. ML-SEM also inherently adjusts for time-specific unobservables because each time period is estimated with a separate equation that includes a unique intercept.
+
+In the first part of our analysis (i.e., tests of hypotheses 1 and 2), we apply the ML-SEM estimator to data aggregated to quarter-years. When the data are aggregated to shorter periods (e.g., months), crime counts are small and skewed. Exponential family estimators, such as Poisson regression, are typically preferred over linear regression for strictly positive, skewed count outcomes.^[Log transforms are sometimes taken to address skew, but the present data have many zero values. "Log plus one" transforms sometimes used in the presence of zeroes result in uninterpretable estimates [@mullahyWhyTransformCritical2022]. Results using this transformation produce a substantively identical interpretation.] Here a fixed effects Poisson estimator with a lagged dependent variable is inappropriate as the autoregressive component can be explosive, the estimator faces an initial conditions problem, and it assumes strict exogeneity of regressors.^[Despite this, TWFE Poisson and linear regression produce estimates with a largely unchanged interpretation to the ML-SEM results. See the appendix for these monthly analyses.] Aggregating to quarters increases counts sufficiently that, for most outcomes, means and standard deviations are similar (see table 1). Robust standard errors are used to address potential heteroskedasticity. A secondary benefit to this aggregation is that the ML-SEM dynamic panel model scales well with cross-sectional units but not temporal units, as each time period introduces a new equation. ML-SEM is not a feasible estimator for estimating 43 monthly outcomes. The authors are not aware of an implementation of a Poisson fixed-effects dynamic panel estimator with endogenous and pre-determined regressors that is feasible for large N and moderate T panels.^[The AB method estimator can be applied to monthly data but performs suboptimally on small monthly counts and exhibits instability. The AB estimator with robust standard errors finds substantively identical results to quarterly ML-SEM, but post-estimation tests indicate potential problems with second-order autocorrelation and invalid instruments which are not found in quarterly analyses.]
+
+In the second part of our analysis (i.e., tests of hypotheses 3 and 4), we apply the ML-SEM approach to data aggregated to larger spatial and temporal units: ward-years. Aggregating to larger units and wider time periods allows us to examine two additional questions. First, yearly data allow testing if the effects of Airbnbs on crime operate over different causal lags than quarterly models capture; @keAirbnbNeighborhoodCrime2021, for instance, found evidence for year-to-year effects. Second, the PAS survey data permit testing if the effects of Airbnb on crime are attributable to changes in collective efficacy, but reliable ecological estimates of collective efficacy can only be obtained for ward-year units. The yearly models are specified exactly as the quarterly models, differing only by having fewer units (632 wards) and periods (4 years). Eight missing values for collective efficacy---wards without any survey respondents in a given year---were addressed using full-information maximum likelihood. Results are identical using listwise deletion.
+
+# Results
+
+We next describe the results of our analyses. First, we present the results from our LSOA-quarter models of the effect of active Airbnb properties on crime. Next, we present the results from our ward-year models that introduce collective efficacy as a potential explanation for the relationship between Airbnb activity and crime.
+
+## Airbnb and crime
+
+Figure \@ref(fig:fig-4-ml-sem) depicts standardized estimates of the effects of Airbnb rentals and prior crime in each model specification for each crime type (our dependent variable). Dots represent point estimates and bars for 95% confidence intervals. Each column of the plot is a different predictor, each row is a different crime type, and within each crime type are estimates from each of the three specifications: The "Lag" specification where active rentals only predict crime in the following period, the "Con" or contemporaneous specification, where active rentals predict crime only in the same period, and the "Both" specification with both lagged and contemporaneous effects.
+
+For example, the top dot in the Active Rentals column and Robbery row represent the estimated standardized effect of active short-term rentals on robbery in the contemporaneous specification ($\hat{\beta} = 0.25$, $95\%\:\text{ CI: } 0.19,0.32$). The dot immediately under it is the estimate for the effect ($\hat{\beta} = 0.21$, $95\%\:\text{ CI: } 0.11,0.31$) when also including the lag of active rentals as a predictor. The estimate for the lag of active rentals is in the column just to the right. The far right column shows estimates for the autoregressive term which is present in (and insensitive to) all specifications.
+
+FIGURE 4 ABOUT HERE
+
+
+
+We observe in figure \@ref(fig:fig-4-ml-sem) a mostly positive association between Airbnb and other short-term rental activity and crime, and that the estimated effects of active rentals are largest for robbery and burglary, followed by theft and any violence. Estimates are indistinguishable from zero for anti-social behavior and harm. In models with only one timing of active rental effects, contemporaneous effects appear larger. With both, contemporaneous effects completely crowd out lagged effects. This provides some evidence that active rentals impact crime mainly over a relatively short time period.
+
+Autoregressive parameters vary greatly in magnitude across crimes, being largest for theft, robbery, and anti-social behavior, while modest for burglary and either form of violence. If there is autoregression, the immediate effects of short-term rentals on crime will propagate through to future periods. The present research design cannot identify the mechanisms underlying these observed autoregressive effects, such as changes in social control capacity or criminal opportunities. Model fit ranges from acceptable to excellent depending on metric: RMSEA values for all models except theft are under 0.08, most RMSEA 90% confidence intervals include 0.05, and nearly all SRMR values are at or below 0.08, the typical cutoff for "good fit" [@huCutoffCriteriaFit1999].
+
+### Property types
+
+The next set of models disaggregates Airbnb rentals into three types of properties: entire homes and apartments, private rooms, and shared rooms. Based on our theoretical framework, we expect criminogenic effects of Airbnb properties to be concentrated in entire homes and apartments. Recall that the letting of any type of dwelling may temporarily increase the number of suitable targets in a neighborhood, but only renting of entire homes should undermine residential stability and therefore social control and guardianship. Figure \@ref(fig:fig-5-ml-sem-diffprops) displays estimates from models that disaggregate properties by type. To reduce clutter, we omit the autoregressive terms and display only the contemporaneous specification as the contemporaneous effects again fully crowd out the lagged effects. In accord with our second hypothesis, crime effects are dominated by entire homes and apartments. Estimates are positive for private rooms for robbery and burglary but of much smaller magnitude and typically not statistically significant.
+
+FIGURE 5 ABOUT HERE
+
+
+### Sensitivity Tests
+
+We conducted a number of tests to evaluate the sensitivity of our results to modeling decisions and heterogeneity in the data. In addition to the number of active Airbnb properties, @keAirbnbNeighborhoodCrime2021 also used measures of Airbnb usage in their study, based on the number of reviews of properties, and Airbnb density, as the number of properties per household unit in the tract. To determine if our inferences about the positive association between Airbnb rental activity and crime hold using alternative measures, we replicated their approach using two measures of usage: AirDNA's usage estimates and counts of Airbnb reviews. AirDNA's usage measure is calculated as the unit-level proportion of time occupied multiplied by the number of beds in the property. Both usage indicators yielded nearly identical estimates to the models we presented in figure \@ref(fig:fig-4-ml-sem) using the active Airbnb property measure, because both usage measures are highly correlated with active properties (approximately 0.93; see the appendix for these results). We also replicated our analysis with a more sophisticated measure of density: The average nearest-neighbor distance between Airbnb properties in each LSOA, both alone and in interaction with the number of active properties. Including these terms captures the effect of geographical concentration in Airbnb properties *within* LSOAs as well as the possibility that the effect of the number of Airbnb properties is conditional on this geographic concentration. It may be the case that clusters of Airbnb properties on the same block or in close proximity are particularly attractive to would-be offenders. Including this density measure had no impact on our findings. Taken together, these tests indicate our findings are robust to different ways to operationalize short-term letting activity.
+
+We also conducted additional sensitivity tests. First, it is possible that negative effects of Airbnb properties might be restricted to the urban core of the city where both Airbnb properties and tourist destinations are clustered. Excluding all LSOAs in London's Transport Zone 1---the 259 LSOAs that comprise Central London, the city's entire urban core---and rerunning the models yields substantively identical results. This indicates the association between Airbnb activity and crime is not limited only to areas with many Airbnb properties. Second, it is also possible that the association between Airbnb properties and crime is attributable not to increases in crime but shifts (displacement) from locations with few Airbnbs to those with more Airbnbs. This would be a form of interference that prevents identification of the effect of interest [@rubinComment1986]. If this displacement occurs mainly from nearby areas, we would expect to see a negative association between local crime and Airbnb properties in adjacent areas. We introduced a spatial lag of Airbnb properties to the models above, but it had no substantive or statistical significance and did not change interpretation of the other estimates. This suggests that if displacement occurs, it does not do so from surrounding LSOAs or wards, or at least not at detectable levels. See the Appendix for summaries of results from these sensitivity tests. We also attempted to include property values as a covariate in the quarterly models, but property values are so strongly autocorrelated over the time period under examination that they are fully accounted for by the unit fixed effects. As described in the next section, including property values in yearly models does not impact the estimated coefficients for Airbnb properties.
+
+## Yearly Analyses
+
+Of the very limited research on the association between Airbnb lettings and crime (e.g., Ke et al. 2020), none has yet estimated the effect of Airbnb activity on intervening social mechanisms. To do so, we aggregate short-term letting and crime data to yearly observations of 632 London wards, and link it to yearly data on collective efficacy from the MOPAC PAS. Airbnb activity is measured here as the yearly sum of properties active per month (i.e., a property active all year counts as 12). Results are highly similar using cumulative days active or the sum of our usage measure. We predict the log of each type of crime, as no zero values are observed for any crime type except robbery (27), and the greater skew in the yearly data causes optimization failures during ML-SEM estimation.^[Two-way fixed-effects Poisson models of the counts and two-way fixed-effects linear models of standardized or log counts produce, in all cases, even larger estimated effects.] These models exclude wards in the City of London (the central business district), because MOPAC did not survey these areas due to their small residential populations. The prior LSOA-quarter analyses produce identical estimates when excluding the 78 LSOAs in the City of London.
+
+The first model features only short-term lettings and past crime, replicating our first LSOA-quarter models at larger units. Results are depicted in figure \@ref(fig:fig-6-ml-sem-yearly). We see here that effects are attenuated compared to quarterly analyses, displaying approximately half the standardized association. This would be expected if the true causal relationship operates over a shorter time period, such as the quarter-years in our prior analyses---incorrect specification of causal timing may attenuate estimates or even flip signs [@vaiseyWhatYouCan2017]. As a sensitivity test, we repeated these analyses at the Ward-half-year level and obtained estimates more similar to our LSOA-quarter results (see Appendix). Confidence intervals in the Ward-year analysis are also much wider due to the smaller effective sample size ($NT=2,528$ ward-years versus $NT=62,855$ LSOA-quarters). The most dramatic difference relative to our calendar-quarter analysis using LSOAs as our geographic unit is for our burglary outcome. As in our earlier results, we again find little association between past active rentals and present crime, net of present active rentals, except possibly in the case of violence. All models exhibit good fit. All RMSEA values are under 0.08 and nearly all RMSEA 90% confidence intervals again include 0.05. No SRMR exceeds 0.021.
+
+FIGURE 6 ABOUT HERE
+
+
+As noted earlier, there is ample evidence that the proliferation of Airbnb rentals increases property values. Increasing property values may cause declines in crime due to changes in the physical environment [e.g., @branasCitywideClusterRandomized2018] or increasing expenditures and demands for policing [e.g., @beckGoverningPoliceHousing2018]. Crime, of course, may also drive property values down, creating a complex relationship. We specified an alternate set of models with the log of median property sale prices as a covariate [data from @chibinNewAttributelinkedResidential2020]. Property sale prices appear to negatively predict robbery, violence, and anti-social behaviour. However, including property prices has no impact on estimates for Airbnb activity or collective efficacy (see appendix).
+
+### Airbnb and Collective Efficacy
+
+Next, we fit yearly models predicting active Airbnb properties with collective efficacy and vice versa.^[All variables are standardized. As in ward-year crime models, to facilitate estimator convergence, active Airbnb properties are logged before standardization when used as an outcome. Results are similar using logged or unlogged property counts as a predictor.] Key point estimates are depicted in figure \@ref(fig:fig-7-ml-sem-yearly-ce-abnb). In contrast to the expectations of our third hypothesis, in no specifications do active Airbnbs statistically significantly predict current or future collective efficacy, though the lagged associations are negative (as expected) and moderate in strength---from -0.103 to -0.147 standardized for the lagged term in each specification. Further in contrary with expectations, this negative association appears mainly attributable to private rooms rather than entire apartments (see appendix). However, collective efficacy significantly predicts greater numbers of Airbnbs, but only when both contemporaneous and lagged effects of collective efficacy on active properties are included. While statistically significant, these conditional associations may not be substantively significant because they are small in magnitude---between 0.012 and 0.018 standardized. These results are consistent with a negative feedback loop between collective efficacy and Airbnb activity, where neighborhoods with high collective efficacy exhibit more Airbnb activity in the present, but neighborhoods with more Airbnb activity have lower collective efficacy in the future.
+
+FIGURE 7 ABOUT HERE
+
+
+### Collective Efficacy and Crime
+
+The final set of models introduce collective efficacy to the original specification predicting ward-year crime. The third column of figure \@ref(fig:fig-8-ml-sem-yearly-ce) indicates that contemporaneous levels of collective efficacy exhibit modest negative associations with robbery, burglary, and violence net of Airbnb rentals. Comparing figure \@ref(fig:fig-8-ml-sem-yearly-ce) with figure \@ref(fig:fig-6-ml-sem-yearly) reveals that the inclusion of collective efficacy has no impact on the magnitude of the estimated associations between Airbnb rentals and crime---the estimates for active rentals are identical between the two specifications.
+
+FIGURE 8 ABOUT HERE
+
+Given that including collective efficacy has little impact on estimates of the association between active Airbnb properties and crime and evidence for a negative effect of Airbnb properties on collective efficacy is weak, these results suggest that little of the relationship between Airbnb properties and crime is attributable to reduced collective efficacy. Accordingly, we fail to find support for our fourth hypothesis.
+
+# Discussion
+
+Since it launched in 2008, four million hosts have rented their dwellings on Airbnb, to more than 1 billion guests. In London, during our study's observation period from 2014 to 2018, an average of 39,000 dwellings, full or partial, were available each month. In total, an estimated 4.5 million guests stayed in an Airbnb in London during our observation period.^[Based on our usage measure described in the method section.] While there is evidence that Airbnb is at times a substitute for hotel accommodation, Airbnb's peer-to-peer home-sharing model opens up homes and their neighborhoods to tourists who might otherwise just frequent the traditional tourist districts of a city. While Airbnb's sales pitch to prospective guests is that they can obtain an insider's view of real-life in the host's residential community, the flipside is that those communities are on the receiving end of a potentially large number of unknown outsiders. Whereas Airbnb has an idyllic goal with such a business model, one in which guests "experience a deeper connection to the communities they visit and the people who live there," there may be downsides to altering the dynamics of residential neighborhoods [@airbnbWhatMakesAirbnb2021].
+
+Indeed, our results suggest that receiving communities have been subject to significant increases in criminal activity. In particular, we find larger numbers of Airbnb properties are associated with more robberies, burglaries, thefts, and violence (though not with bodily harm), and these effects are mainly attributable to entire properties for rent rather than spare rooms in properties. These effects on crime appear more consistent with immediate increases in criminal opportunity rather than gradual destabilization of informal social control. Rather than by undermining collective efficacy, Airbnb may lead to crime by augmenting the situational conditions in an area, including the volume of suitable targets and capable guardians. To be fair, Airbnb has taken concerted steps to reduce criminal activity resulting from Airbnb activity, including background checks on guests and requiring minimum nights of rental on occasions when one-night parties may be tempting to hold. The fact that we still find an increase in crime despite Airbnb's efforts reveals the severity of the predicament induced by the rise of home-sharing. 
+
+Our findings have implications for criminological theory and raise new questions for future empirical tests of these theories. In particular, it is somewhat surprising that we find minimal evidence for short-term lettings increasing crime through neighborhood destabilization. This finding leads us to wonder just how much residential turnover is necessary to undermine collective efficacy, and if the form of turnover is what matters. For instance, turnover when a long-time trusted neighbor moves away from the neighborhood is different than when a trusted neighbor rents their house on Airbnb for touristy occasions such as Wimbledon or the Notting Hill Carnival.
+
+That being said, despite the phenomenal growth of Airbnb since its inception, the number of dwellings and hosts on Airbnb is small relative to the total number of dwellings in an area. While as many as 197,000 total dwellings were offered for rent for at least one night in our study period, there are 3.7 million dwellings in London [@ministryofhousingcommunities&localgovernmentTotalNumberDwellings2022]. Airbnb may have little effect on collective efficacy because it represents a relatively small share of housing units in the vast majority of neighborhoods in London. Of course it is possible that a longer observation period is needed to observe sufficient neighborhood destabilization to result in detectable effects on crime. Additionally, as noted earlier, perceptions of collective efficacy vary less across London neighborhoods than is typically seen in US cities. It is possible that opportunity effects dominate in predicting crime because social control capacity does not vary greatly across London or between years, at least in the observation period of our study. Replication of our analysis in other contexts, particularly the US, would be fruitful to advance work on the mechanisms by which Airbnb facilitates crime. 
+
+The positive association between Airbnb lettings and a variety of crime types has substantial policy implications. Short-term letting of private accommodation in the UK has specifically been facilitated by the Deregulation Act 2015, which relaxed prior laws about short-term rental lettings. The intent of the 2015 Act was to foster supplemental income opportunities for residents, enabling them to rent out some or all of their main residence for up to 90 days a year. However, evidence suggests that the short-term rental market has become commercialized, with at least one-third of active listings managed by hosts with multiple listings and approximately one-fifth managed by hosts with at least four active listings [@georgiecoshHousingResearchNote2020]. Given that adverse impacts of short-term rental activity on crime affect the entire community but income benefits accrue mainly to commercial interests, the facilitation of short-term rental activity in the UK may be viewed as a policy failure. In other words, the average homeowner has failed to reap much benefit from the policy change yet they have suffered the consequences of increased crime.
+
+Limitations of the study are important to bear in mind, as they potentially undermine the conclusiveness of our findings. The primary threat to identifying effects of Airbnb properties on crime is the presence of omitted time-varying variables that predict both short-term rental listings and crime. In London, football games (i.e., soccer) are major events likely to be associated with both short-term rental activity and crime [e.g., @mariePoliceThievesStadium2016]. As an extensive sensitivity test (available upon request) we specified models including as covariates either the number of English Premier League (EPL) games or the attendance figures of those games in the LSOA with the stadium, in LSOAs adjacent to the stadium LSOAs, or in LSOAs within one kilometer of a stadium. We also specified models excluding LSOAs within one kilometer of any EPL team's stadium. In no specifications did the estimated effects of Airbnb activity on crime change noticeably.
+
+One limitation of the present analysis is that we assume that the effect of Airbnb properties on crime is the same in all neighborhoods. It is possible Airbnb properties are more harmful in some neighborhoods, and less harmful in other neighborhoods. We also found similar effects of Airbnb when excluding the dense urban core of London---this suggests our observed effects are not restricted to the areas where Airbnb activity is most concentrated. Future research might examine whether Airbnb properties are associated with crime outside of major cities, such as in small towns or rural settings. We did, however, explore heterogeneity in effects across property types, finding that effects of active Airbnb properties on crime appear attributable primarily to entire properties for rent (as compared to spare or shared rooms).
+
+While we posit that Airbnb properties are more likely to change the composition of people present in neighborhoods than the overall number, this is an outstanding empirical question. On the one hand, if short-term letting activity does not increase ambient populations, it may be important to control for ambient populations to accurately estimate effects of lettings on crime (i.e., they may be a confounder). On the other hand, if short-term letting activity increases ambient populations, this may be a mechanism by which they increase crime rates, and therefore controlling for it would introduce post-treatment control bias. Related to this, it is possible short-term letting does not increase ambient populations near lettings but rather increases ambient populations in nearby areas with tourist attractions. Granular human mobility data could be used to test whether changes in short-term lettings influence ambient populations [e.g., @saxonLocalStructuresHuman2021; @tuckerWhoTweetsWhere2021], both where Airbnbs are located and in areas connected to concentrations of Airbnbs by population flows.
+
+Although these limitations and outstanding questions should be addressed in future research, we believe the present study makes an important contribution by examining the consequences of the growing short-term letting economy for crime. Our findings suggest short-term letting may contribute to increases in neighborhood crime---in particular robbery and property crime---and these effects are more likely to be attributable to changes in opportunity than erosion of neighborhood social control.
+
+# References
+
+<div id="refs"></div>
+
+\newpage
+
+# Tables
+
+```{r descriptives, echo = FALSE, message = FALSE, label = "descriptives", tab.cap = "Descriptive statistics: LSOA quarters", tab.id = "tab-desc"}
+load("../data/output/quarter_descriptives.RData")
+quarter_descriptives %>%
+  filter(!name %in% c("nni", "median_priceper", "n_sales")) %>%
+  mutate(name = str_to_title(str_replace_all(name, "_", " ")),
+         name = 
+           case_when(
+             name == "Asb" ~ "ASB", 
+             name == "Violence Harm" ~ "Violence with Harm",
+             name == "Entire Home Apt" ~ "Entire Property",
+             TRUE ~ name)) |>
+  mutate(name = fct_relevel(name,
+                            "Active Rentals", 
+                            "Entire Property", 
+                            "Private Room", 
+                            "Shared Room",
+                            "Robbery",
+                            "Burglary",
+                            "Theft",
+                            "ASB",
+                            "Violence",
+                            "Violence with Harm")) |>
+  janitor::clean_names(case = "title") %>%
+  select(-Missing, - `Missing Pct`) %>%
+  rename(SD = Sd) %>%
+  flextable() %>%
+  fontsize(size = 10, part = "all") %>%
+  set_table_properties(width = 1, layout = "fixed") %>%
+  width(j = 3:7, width = 0.7) %>%
+  width(j = 2, width = 1) %>%
+  width(j = 1, width = 1.4) %>%
+  padding(part = "all", padding.left = 1, padding.right = 1, padding.top = 2, padding.bottom = 2) %>%
+  colformat_double(digits = 2) %>%
+  # add_header_lines("Table 1. Descriptive Statistics: LSOA Quarters") %>%
+  add_footer_lines("NT = 62,855 (N = 4,835, T = 13)") %>%
+  border_remove() %>%
+  hline_bottom(border = officer::fp_border(width = 1), part = "body") %>%
+  hline_top(border = officer::fp_border(width = 1), part = "header") %>%
+  hline_top(border = officer::fp_border(width = 0.5))
+  
+```
+
+\newpage
+
+```{r half-year-descriptives, echo = FALSE, message = FALSE, label = "half-year-descriptives", tab.cap = "Descriptive statistics: Ward half-years", tab.id = "tab-half-year-descp"}
+load("../data/output/year_half_descriptives.RData")
+year_half_descriptives %>%
+  filter(!name %in% c("nni", "n_sales")) %>%
+  mutate(name = str_to_title(str_replace_all(str_remove(name, "_aw"), "_", " ")),
+         name = 
+           case_when(
+             name == "Median Priceper" ~ "Median Price per m^2",
+             name == "Asb" ~ "ASB", 
+             name == "Violence Harm" ~ "Violence with Harm",
+             name == "Entire Home Apt" ~ "Entire Property",
+             TRUE ~ name)) |>
+  mutate(name = fct_relevel(name,
+                            "Active Rentals", 
+                            "Entire Property", 
+                            "Private Room", 
+                            "Shared Room", 
+                            "Collective Efficacy",
+                            "Median Price per m^2",
+                            "Robbery",
+                            "Burglary",
+                            "Theft",
+                            "ASB",
+                            "Violence",
+                            "Violence with Harm")) |>
+  arrange(name) %>%
+  janitor::clean_names(case = "title") %>%
+    select(-Missing, - `Missing Pct`) %>%
+  rename(SD = Sd) %>%
+  flextable() %>%
+  fontsize(size = 10, part = "all") %>%
+  set_table_properties(width = 1, layout = "fixed") %>%
+  width(j = 3:7, width = 0.7) %>%
+  width(j = 2, width = 1) %>%
+  width(j = 1, width = 1.4) %>%
+  padding(part = "all", padding.left = 1, padding.right = 1, padding.top = 2, padding.bottom = 2) %>%
+  colformat_double(digits = 2) %>%
+  # add_header_lines("Table 1. Descriptive Statistics: LSOA Quarters") %>%
+  add_footer_lines("NT = 4,424 (N = 632, T = 7)") %>%
+  border_remove() %>%
+  hline_bottom(border = officer::fp_border(width = 1), part = "body") %>%
+  hline_top(border = officer::fp_border(width = 1), part = "header") %>%
+  hline_top(border = officer::fp_border(width = 0.5)) 
+```
+
+\newpage
+
+# Figures
+
+```{r fig-1-map, echo = FALSE, message = FALSE, dev = "png", dpi = 300, fig.width = 6.5, fig.cap = "Monthly average concentration of active Airbnb properties in London LSOAs, 2014-2018. Gray indicates LSOAs with no reported Airbnb properties.", fig.id = "fig-1-map"}
+load("../data/output/abnb_density_data.RData")
+load("../data/derived/shape/london_lsoa.RData")
+load("../data/derived/shape/london_water.RData")
+
+abnb_density_plot <- abnb_density_data %>%
+  mutate(abnb_density = ifelse(abnb_density == 0, NA, abnb_density)) %>%
+  ggplot(aes(fill = abnb_density)) +
+  geom_sf(color = NA) + 
+  geom_sf(data = london_water, color = NA, fill = "skyblue", inherit.aes = FALSE) +
+  theme_void() + 
+  annotation_scale(location = "bl", text_family = "serif",) +
+  annotation_north_arrow(which_north = "grid",
+                         location    = "tl",
+                         style       = north_arrow_orienteering(text_family = "serif"),
+                         height      = unit(1, "cm"),
+                         width       = unit(1, "cm")) +
+  scale_fill_viridis_c(option = "inferno") +
+  labs(fill = "Properties<br>per KM^2") + 
+  theme(legend.title  = element_markdown(size = 8),
+        legend.position = "right",
+        text = element_text(family = "serif"))
+abnb_density_plot
+```
+
+\newpage
+
+```{tikz fig-2-theory-dag, echo = FALSE, fig.id = "fig-2-theory-dag",  fig.cap = "Theoretical model. CE is collective efficacy, O is criminal opportunity, C is crime, A is short-term lettings, U is omitted confounders", fig.ext = 'png', fig.width = 12.7/5, fig.height = 10.16/5}
+\usetikzlibrary{positioning}
+\definecolor{black}{HTML}{000000}
+\tikzset{
+    > = stealth,
+    every node/.append style = {
+        draw = none
+    },
+    every path/.append style = {
+        arrows = ->,
+        draw = black,
+        fill = none
+    },
+    hidden/.style = {
+        draw = black,
+        shape = circle,
+        inner sep = 1pt
+    }
+}
+\tikz{
+    \node (a1) at (0,0) {$A_1$};
+    \node[hidden] (u) at (1,-1) {$U$};
+    \node (c1) at (0,2)  {$C_1$};
+    \node (a2) at (2,0)  {$A_2$};
+    \node (c2) at (2,2)  {$C_2$};
+    \node[hidden] (o1) at (0,1)  {$O_1$};
+    \node[hidden] (o2) at (2,1)  {$O_2$};
+    \node[hidden] (s1) at (-1,1) {$\textit{CE}_1$};
+    \node[hidden] (s2) at (1,1)  {$\textit{CE}_2$};
+    \path (a1) edge (o1);
+    \path (c1) edge [bend left=25] (o2);
+    \path (c1) edge [bend left=10] (s2);
+    \path (o1) edge (c1);
+    \path (a2) edge (o2);
+    \path (o2) edge (c2);
+    \path (a1) edge (a2);
+    \path (a1) edge (s2);
+    \path (a1) edge (s2);
+    \path (s2) edge (o2);
+    \path (s1) edge (o1);
+    \path (c1) edge [bend right=27] (a2);
+    \path (s1) edge [bend left=40] (s2);
+    \path (o1) edge [bend left=40] (o2);
+    \path (u) edge (a1);
+    \path (u) edge (a2);
+    \path (u) edge [bend left=45] (s1);
+    \path (u) edge (s2);
+    \path (u) edge (o1);
+    \path (u) edge (o2);
+    \path (u) edge [bend left=60] (c1);
+    \path (u) edge [bend right=60] (c2);
+  }
+```
+
+\newpage
+
+```{tikz fig-3-model-dag, fig.id = "fig-3-model-dag", echo = FALSE, fig.cap = "Model to be estimated", fig.ext = 'png', fig.width = 12.7/5, fig.height = 10.16/5}
+\usetikzlibrary{positioning}
+\definecolor{black}{HTML}{000000}
+\tikzset{
+    > = stealth,
+    every node/.append style = {
+        draw = none
+    },
+    every path/.append style = {
+        arrows = ->,
+        draw = black,
+        fill = none
+    },
+    hidden/.style = {
+        draw = black,
+        shape = circle,
+        inner sep = 1pt
+    }
+}
+\tikz{
+    \node (a1) at (0,0) {$A_1$};
+    \node[hidden] (u) at (1,-1) {$U$};
+    \node (c1) at (0,2)  {$C_1$};
+    \node (a2) at (2,0)  {$A_2$};
+    \node (c2) at (2,2)  {$C_2$};
+    \path (a1) edge (c1);
+    \path (c1) edge (c2);
+    \path (a2) edge (c2);
+    \path (a1) edge (a2);
+    \path (a1) edge (c2);
+    \path (c1) edge (a2);
+    \path (u) edge (a1);
+    \path (u) edge (a2);
+    \path (u) edge [bend left=60] (c1);
+    \path (u) edge [bend right=60] (c2);
+  }
+```
+
+\newpage
+
+```{r fig-4-ml-sem, fig.id = "fig-4-ml-sem", echo = FALSE, message = FALSE, fig.height = 6, fig.width = 6.5, fig.cap = "ML-SEM estimated quarterly effects on crime from active short-term lettings and past crime. Fully standardized, 95% confidence intervals", fig.retina =  3}
+load("../data/output/dpm_quarter_fit.RData")
+dpm_coef_plot(dpm_quarter_fit, hide_lag = FALSE)
+```
+
+\newpage
+
+```{r fig-5-ml-sem-diffprops, fig.id = "fig-5-ml-sem-diffprops", echo = FALSE, message = FALSE, fig.height = 3, fig.width = 6.5, fig.cap = "ML-SEM estimated quarterly effects on crime from different types of short-term lettings. Contemporaneous total effects from 'both' specification shown. Fully standardized, 95% confidence intervals", fig.retina =  3 }
+load("../data/output/dpm_quarter_diffprops_fit.RData")
+dpm_coef_plot(dpm_quarter_diffprops_fit, hide_lag = TRUE, con_only = TRUE) 
+```
+
+\newpage
+
+```{r fig-6-ml-sem-half-yearly, fig.id = "fig-6-ml-sem-half-yearly", echo = FALSE, message = FALSE, fig.height = 6, fig.width = 6, fig.cap = "ML-SEM estimated half-yearly effects on crime from active short-term lettings and past crime. Fully standardized, 95% confidence intervals", fig.retina =  3}
+load("../data/output/dpm_half_fit.RData")
+dpm_coef_plot(dpm_half_fit)
+```
+
+\newpage
+
+```{r fig-7-ml-sem-half-yearly-ce-abnb, fig.id = "fig-7-ml-sem-half-yearly-ce-abnb", echo = FALSE, message = FALSE, fig.height = 3, fig.width = 6, fig.cap = "ML-SEM estimated half-yearly effects on collective efficacy and active Airbnb rentals. Lag of dependent variable included in model but omitted from plot. Fully standardized, 95% confidence intervals", fig.retina =  3}
+load("../data/output/dpm_half_ce_abnb_fit.RData")
+dv_ce <- ggplot(dpm_half_ce_abnb_fit %>% 
+           filter(dv == "Collective Efficacy" & !str_detect(term, "Collective Efficacy")), aes(x = estimate, y = spec)) + 
+    ylab("*Specification*") + xlab(NULL) +
+    geom_point() + 
+    facet_grid( ~ term, switch = "y") + 
+    geom_errorbarh(aes(xmin = conf.low, xmax = conf.high), size = 0.2, height = 0.2) +
+    geom_vline(xintercept = 0, linetype = "dashed") + 
+    scale_x_continuous(breaks = c(-.1, 0, .1)) +
+    theme_minimal() + 
+    ggtitle("Outcome:\nCollective Efficacy") +
+    theme(text = element_text(family = "serif"),
+          panel.grid.major.y  = element_blank(),
+          panel.grid.minor.x  = element_blank(),
+          panel.spacing.y =unit(0,"lines"),
+          strip.placement = "outside",
+          strip.text.y = element_text(face = "bold"),
+          axis.text.y = element_text(face = "italic"),
+          axis.title.y = ggtext::element_markdown())
+
+dv_abnb <- ggplot(dpm_half_ce_abnb_fit %>% 
+           filter(dv == "Active Rentals" & !str_detect(term, "Active Rentals")), aes(x = estimate, y = spec)) + 
+    ylab(NULL) + xlab(NULL) +
+    geom_point() + 
+    facet_grid( ~ term, switch = "y") + 
+    geom_errorbarh(aes(xmin = conf.low, xmax = conf.high), size = 0.2, height = 0.2) +
+    geom_vline(xintercept = 0, linetype = "dashed") + 
+  scale_x_continuous(breaks = c(-.01, 0, .01)) +
+    theme_minimal() +
+    ggtitle("Outcome:\nLog of Active Airbnb Rentals") +
+    theme(text = element_text(family = "serif"),
+          panel.grid.major.y  = element_blank(),
+          panel.grid.minor.x  = element_blank(),
+          panel.spacing.y =unit(0,"lines"),
+          strip.placement = "outside",
+          strip.text.y = element_text(face = "bold"),
+          axis.text.y = element_blank(),
+          axis.title.y = ggtext::element_markdown(),
+          strip.clip = "off")
+dv_ce + dv_abnb
+```
+
+
+
+
+\newpage
+
+```{r fig-8-ml-sem-yearly-ce, fig.id = "fig-8-ml-sem-yearly-ce",  echo = FALSE, message = FALSE, fig.height = 6, fig.width = 6, fig.cap = "ML-SEM estimated half-yearly effects on crime from active short-term lettings and collective efficacy. Lag of crime included in model but omitted from plot. Fully standardized, 95% confidence intervals", fig.retina =  3}
+load("../data/output/dpm_half_ce_fit.RData")
+dpm_half_ce_fit %>%
+  mutate(term = str_replace(term, "std_collective_efficacy", "Collective\nEfficacy")) %>%
+  dpm_coef_plot()
+```
+
+
