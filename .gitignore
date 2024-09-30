@@ -38,8 +38,8 @@ rsconnect/
 # Data
 
 data/raw/*
-data/derived/
-data/analytical/
+data/derived/*
+data/analytical/*
 data/output/
 
 # Reproduction data
