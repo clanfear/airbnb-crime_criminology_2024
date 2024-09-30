@@ -5,11 +5,11 @@ library(tidyverse)
 library(dpm)
 source("./syntax/project_functions.R")
 
-load("./data/analytical/lsoa_quarter_props_crime.RData")
-list_missing(lsoa_quarter_props_crime)
+load("./data/analytical/lsoa_quarter.RData")
+list_missing(lsoa_quarter)
 
 # Quarters
-dpm_quarter <- lsoa_quarter_props_crime %>%
+dpm_quarter <- lsoa_quarter %>%
   mutate(dlg_violence = dlg_violence_noharm + dlg_violence_harm) %>%
   mutate(across(matches("^(dp|dlg|abnb|nni|rpp)"), ~standardize(.))) %>%
   mutate(date_num = as.numeric(year_quarter_fac)) %>%

@@ -5,10 +5,17 @@
 library(tidyverse)
 library(dpm)
 source("./syntax/project_functions.R")
-load("./data/analytical/dpm_quarter.RData")
-load("./data/analytical/dpm_quarter_unstd.RData")
 
 # Without influential cases
+load("./data/analytical/lsoa_quarter.RData")
+
+# Last minute preprocessing for the estimation
+# Standardized LSOA quarter data
+dpm_quarter <- lsoa_quarter %>%
+  mutate(dlg_violence = dlg_violence_noharm + dlg_violence_harm) %>%
+  mutate(across(matches("^(dp|dlg|abnb|nni|rpp)"), ~standardize(.))) %>%
+  mutate(date_num = as.numeric(year_quarter_fac)) %>%
+  panelr::panel_data(id = lsoa_code, wave = date_num)
 
 highest_r_lsoas <- dpm_quarter |>
   as_tibble() |>

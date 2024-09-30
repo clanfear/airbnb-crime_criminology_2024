@@ -1,9 +1,24 @@
+# This script runs the dpm models on ward half-year data.
+
 library(tidyverse)
 library(dpm)
 source("./syntax/project_functions.R")
-load("./data/analytical/dpm_ward_half.RData")
+load("./data/analytical/ward_half.RData")
 
+# Preprocessing for the DPM models
+# Log then standardize; standardize across all data rather than within model
+# as coefficients are fixed across waves; within-wave standardization will do
+# strange things in that situation (same coef, different scales).
 
+dpm_ward_half <- ward_half %>%
+  mutate(year_half_num = as.numeric(year_half),
+         collective_efficacy = ce) |>
+  mutate(across(matches("^(dp|dlg)"), ~log_na(.), .names = "log_{.col}")) %>%
+  mutate(across(matches("^(rpp|ce|dp|dlg|abnb|collective)"), ~standardize(.), .names = "std_{.col}")) %>%
+  mutate(across(matches("^(rpp_me|dp|dlg|abnb)"), ~standardize(log_na(.)), .names = "log_std_{.col}")) %>%
+  panelr::panel_data(id = ward_code, wave = year_half_num)
+
+# Fitting
 dpm_half_fit <- expand.grid(dv = c("log_std_dp_robbery", "log_std_dp_burglary", "log_std_dp_asb", "log_std_dp_violence", "log_std_dlg_violence_harm_aw", "log_std_dlg_theft_aw"),
                             spec = c("both", "con", "lag")) %>%
   mutate(
@@ -78,7 +93,7 @@ dpm_half_ce_abnb_fit <- bind_rows(
       spec == "con"  ~ paste0(dv, " ~ ", "pre(std_collective_efficacy)"),
       spec == "lag"  ~ paste0(dv, " ~ ", "pre(lag(std_collective_efficacy))"),
       TRUE ~ "ERROR")) %>%
-  run_dpm(., dpm_ward_half, optim.method = "BFGS")
+  run_dpm(., dpm_ward_half)
   ) %>%
   select(dv, spec, term, estimate, std.error, conf.low, conf.high) %>%
   mutate(term = ifelse(str_detect(term, "dp|dlg") & str_detect(term, "t - 1"), "crime (t - 1)", term),

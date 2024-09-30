@@ -12,12 +12,12 @@ library(dpm)
 library(DHARMa)
 source("./syntax/project_functions.R")
 
-load("./data/analytical/lsoa_quarter_props_crime.RData")
-list_missing(lsoa_quarter_props_crime)
+load("./data/analytical/lsoa_quarter.RData")
+list_missing(lsoa_quarter)
 
 
 # Quarters
-dpm_quarter <- lsoa_quarter_props_crime %>%
+dpm_quarter <- lsoa_quarter %>%
   mutate(dlg_violence = dlg_violence_noharm + dlg_violence_harm) %>%
   mutate(across(matches("abnb"), ~ poly(., 2)[,1], .names = "{.col}_1"),
          across(c(matches("abnb"), -matches("_1$")), ~ poly(., 2)[,2], .names = "{.col}_2")) %>%
@@ -25,7 +25,7 @@ dpm_quarter <- lsoa_quarter_props_crime %>%
   mutate(date_num = as.numeric(year_quarter_fac)) %>%
   panelr::panel_data(id = lsoa_code, wave = date_num)
 
-lsoa_quarter <- lsoa_quarter_props_crime %>%
+lsoa_quarter <- lsoa_quarter %>%
   mutate(dlg_violence = dlg_violence_noharm + dlg_violence_harm) %>%
   mutate(across(matches("^(abnb|nni|rpp)"), ~standardize(.)),
          across(matches("abnb"), ~ poly(., 2)[,1], .names = "{.col}_1"),

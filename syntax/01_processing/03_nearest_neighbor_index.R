@@ -1,3 +1,8 @@
+# This script generates nearest neighbor index measures for determining if 
+# Airbnb effects depend on how tightly clustered they are. This is not in the
+# main paper but enters some sensitivity tests. Regardless, we keep the NNI
+# measure in the main data. This is computationally intensive.
+
 library(tidyverse)
 library(lubridate)
 library(sf)
@@ -7,6 +12,7 @@ plan(multisession, workers = 8)
 load("./data/derived/shape/london_lsoa.RData")
 load("./data/derived/airbnb/airdna_monthly.RData")
 
+# Calculate nearest neighbor distance
 get_nnd <- function(geometry){
   if(length(geometry) == 1){
     return(NA)
@@ -17,6 +23,7 @@ get_nnd <- function(geometry){
   }
 }
 
+# Calculate average nearest neighbor distance
 get_annd <- function(geometry){
   if(nrow(geometry) == 1){
     return(NA)

@@ -6,9 +6,9 @@ library(plm)
 # anyway as well, though there's indication of autocorrelation and instrument
 # problems.
 
-load("./data/analytical/lsoa_month_props_crime.RData")
+load("./data/analytical/lsoa_quarter.RData")
 
-pdata <-lsoa_month_props_crime %>%
+pdata <- lsoa_quarter %>%
   group_by(lsoa_code) %>%
   arrange(date) %>%
   mutate(dp_robbery_diff = dp_robbery - dplyr::lag(dp_robbery),

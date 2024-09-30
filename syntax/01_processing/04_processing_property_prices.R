@@ -1,5 +1,10 @@
+# This script processes the property sale price data using data.table for a 
+# slight speed boost. These are all at the LSOA level but can be areal weighted
+# to wards later.
+
 library(data.table)
 
+# YOu will need to manually set the secure data directory.
 data_dir <- "Z:/CSI Projects/Airbnb/Data/property_prices/"
 
 property_prices <- fread(paste0(data_dir, "tranall2011_19.csv"))[ , .(lsoa_code = lsoa11, postcode, dateoftransfer, price, tfarea, priceper)]
@@ -10,6 +15,7 @@ property_prices <- property_prices[, `:=`(date    =  lubridate::ym(format(as.Dat
                                           year_half = lubridate::year(dateoftransfer) + (0.5 * (lubridate::month(dateoftransfer) >= 7)),
                                           year    =  lubridate::year(dateoftransfer))]
 
+# LSOA months
 property_prices_lsoa_month <- property_prices[, 
                 .(rpp_n_sales         = .N, 
                   rpp_mean_price      = mean(price), 
@@ -27,7 +33,7 @@ property_prices_lsoa_month <- property_prices_lsoa_month %>%
 
 save(property_prices_lsoa_month, file = "./data/derived/property_prices/property_prices_lsoa_month.RData")
 
-# QUARTER
+# LSOA quarters
 property_prices_lsoa_quarter <- property_prices[, 
                                               .(rpp_n_sales = .N, 
                                                 rpp_mean_price      = mean(price), 
@@ -44,8 +50,7 @@ property_prices_lsoa_quarter <- property_prices_lsoa_quarter %>%
 
 save(property_prices_lsoa_quarter, file = "./data/derived/property_prices/property_prices_lsoa_quarter.RData")
 
-# HALF-YEAR
-
+# LSOA half-years
 property_prices_lsoa_half <- property_prices[, 
                                                 .(rpp_n_sales = .N, 
                                                   rpp_mean_price      = mean(price), 
@@ -62,7 +67,7 @@ property_prices_lsoa_half <- property_prices_lsoa_half %>%
 
 save(property_prices_lsoa_half, file = "./data/derived/property_prices/property_prices_lsoa_half.RData")
 
-# YEAR
+# LSOA years
 property_prices_lsoa_year <- property_prices[, 
                                                 .(rpp_n_sales = .N, 
                                                   rpp_mean_price      = mean(price), 

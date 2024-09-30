@@ -10,10 +10,15 @@ future::plan(multisession, workers = 6)
 
 source("./syntax/project_functions.R")
 
-load("./data/analytical/dpm_quarter.RData")
-list_missing(dpm_quarter)
+load("./data/analytical/lsoa_quarter.RData")
 
-
+# Last minute preprocessing for the estimation
+# Standardized LSOA quarter data
+dpm_quarter <- lsoa_quarter %>%
+  mutate(dlg_violence = dlg_violence_noharm + dlg_violence_harm) %>%
+  mutate(across(matches("^(dp|dlg|abnb|nni|rpp)"), ~standardize(.))) %>%
+  mutate(date_num = as.numeric(year_quarter_fac)) %>%
+  panelr::panel_data(id = lsoa_code, wave = date_num)
 
 dpm_plot <- function(x){
   dv_levels <- c("Robbery", "Burglary", "Theft", "ASB", "Violence", "Harm")
@@ -74,7 +79,7 @@ dpm_plot(dpm_quarter_diffprops_usage_fit)
 
 # No city of london
 
-dpm_quarter_nocol <- lsoa_quarter_props_crime %>%
+dpm_quarter_nocol <- lsoa_quarter %>%
   filter(!city_of_london) %>%
   mutate(across(matches("^(dp|dlg|abnb|nni|rpp)"), ~standardize(.))) %>%
   mutate(date_num = as.numeric(year_quarter_fac)) %>%

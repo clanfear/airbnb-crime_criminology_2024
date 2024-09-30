@@ -1,3 +1,6 @@
+# This script merges all the LSOA data into a analytical data sets, one monthly
+# for sensitivity tests and one quarterly for the main analysis.
+
 library(tidyverse)
 library(lubridate)
 library(sf)
@@ -39,17 +42,18 @@ lsoa_month_props_crime_splags <- london_lsoa_neighbors |>
   group_by(lsoa_code, date) |>
   summarize(across(matches("^(abnb|dlg|dp|rpp)"), ~ mean(., na.rm = TRUE), .names = "splag_{.col}"), .groups = "drop")
 
-lsoa_month_props_crime <- lsoa_month_props_crime |> 
+lsoa_month <- lsoa_month_props_crime |> 
   left_join(lsoa_month_props_crime_splags)
 
-list_missing(lsoa_month_props_crime)
-nrow(lsoa_month_props_crime) == n_distinct(lsoa_month_props_crime$lsoa_code) * n_distinct(lsoa_month_props_crime$date)
+list_missing(lsoa_month)
+nrow(lsoa_month) == n_distinct(lsoa_month$lsoa_code) * n_distinct(lsoa_month$date)
 
-save(lsoa_month_props_crime, file = "./data/analytical/lsoa_month_props_crime.RData")
+# LSOA month data are not available in repro files due to identifiability
+save(lsoa_month, file = "./data/analytical/lsoa_month.RData")
 
 # Quarterly data
 
-lsoa_quarter_props_crime <- lsoa_month_props_crime |>
+lsoa_quarter_props_crime <- lsoa_month |>
   filter(date >= ym("2015-01") & date < ym("2018-04")) |>
   mutate(year_quarter = lubridate::quarter(date, type = "date_first")) |>
   group_by(lsoa_code, year_quarter) |>
@@ -80,28 +84,10 @@ lsoa_quarter_props_crime_splags <- london_lsoa_neighbors |>
   group_by(lsoa_code, year_quarter) |>
   summarize(across(matches("^(abnb|dlg|dp|rpp)"), ~ mean(., na.rm = TRUE), .names = "splag_{.col}"), .groups = "drop")
 
-lsoa_quarter_props_crime <- lsoa_quarter_props_crime |> 
+lsoa_quarter <- lsoa_quarter_props_crime |> 
   left_join(lsoa_quarter_props_crime_splags)
 
-list_missing(lsoa_quarter_props_crime)
-nrow(lsoa_quarter_props_crime) == n_distinct(lsoa_quarter_props_crime$lsoa_code) * n_distinct(lsoa_quarter_props_crime$year_quarter)
+list_missing(lsoa_quarter)
+nrow(lsoa_quarter) == n_distinct(lsoa_quarter$lsoa_code) * n_distinct(lsoa_quarter$year_quarter)
 
-save(lsoa_quarter_props_crime, file = "./data/analytical/lsoa_quarter_props_crime.RData")
-
-# These two are final processed data in panelr form for the DPM function
-# Base LSOA quarter data
-dpm_quarter <- lsoa_quarter_props_crime %>%
-  mutate(dlg_violence = dlg_violence_noharm + dlg_violence_harm) %>%
-  mutate(across(matches("^(dp|dlg|abnb|nni|rpp)"), ~standardize(.))) %>%
-  mutate(date_num = as.numeric(year_quarter_fac)) %>%
-  panelr::panel_data(id = lsoa_code, wave = date_num)
-
-save(dpm_quarter, file = "./data/analytical/dpm_quarter.RData")
-
-# Base LSOA quarter data with unstandardized vars
-dpm_quarter_unstd <- lsoa_quarter_props_crime %>%
-  mutate(dlg_violence = dlg_violence_noharm + dlg_violence_harm) %>%
-  mutate(date_num = as.numeric(year_quarter_fac)) %>%
-  panelr::panel_data(id = lsoa_code, wave = date_num)
-
-save(dpm_quarter_unstd, file = "./data/analytical/dpm_quarter_unstd.RData")
+save(lsoa_quarter, file = "./data/analytical/lsoa_quarter.RData")

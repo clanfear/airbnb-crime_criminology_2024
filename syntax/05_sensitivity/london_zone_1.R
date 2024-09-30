@@ -4,7 +4,7 @@ library(tidyverse)
 library(sf)
 library(dpm)
 source("./syntax/project_functions.R")
-load("./data/analytical/lsoa_quarter_props_crime.RData")
+load("./data/analytical/lsoa_quarter.RData")
 load("./data/derived/shape/london_lsoa.RData")
 
 # Constructed a Zone 1 shapefile by hand, can skip that and load the relevant data
@@ -25,7 +25,7 @@ load("./data/derived/shape/london_lsoa.RData")
 load("./data/raw/london_lsoa_zone_1.RData")
 
 # NOT ZONE 1
-dpm_quarter_not_zone_1 <- lsoa_quarter_props_crime %>%
+dpm_quarter_not_zone_1 <- lsoa_quarter %>%
   inner_join(london_lsoa_zone_1) %>%
   filter(!in_zone_1) %>%
   mutate(dlg_violence = dlg_violence_noharm + dlg_violence_harm) %>%

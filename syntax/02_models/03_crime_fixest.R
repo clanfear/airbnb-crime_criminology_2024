@@ -1,11 +1,14 @@
+# These are fixed effects models run for comparison to the DPMs. The data
+# for the monthly analyses cannot be publicly released due to identifiability.
+
 library(tidyverse)
 library(fixest, pos = 99999)
 library(modelsummary)
 source("./syntax/project_functions.R")
-load("./data/analytical/dpm_ward_half.RData")
-load("./data/analytical/lsoa_month_props_crime.RData")
+load("./data/analytical/lsoa_month.RData")
+load("./data/analytical/ward_half.RData")
 
-fixest_month <- lsoa_month_props_crime %>%
+fixest_month <- lsoa_month %>%
   mutate(across(matches("^(dp|dlg|abnb|nni|rpp)"), ~standardize(.), .names = "{.col}_std"),
          across(matches("^(dp|dlg)"), ~standardize(log(. + 1)), .names = "{.col}_log"))
 
@@ -33,6 +36,14 @@ fixest_table <- modelsummary::modelsummary(fixest_estimates,
 save(fixest_table, file = "./data/output/fixest_table.RData")
 
 # While less important than monthly, we ran these at Ward half-year too
+dpm_ward_half <- ward_half %>%
+  mutate(year_half_num = as.numeric(year_half),
+         collective_efficacy = ce) |>
+  mutate(across(matches("^(dp|dlg)"), ~log_na(.), .names = "log_{.col}")) %>%
+  mutate(across(matches("^(rpp|ce|dp|dlg|abnb|collective)"), ~standardize(.), .names = "std_{.col}")) %>%
+  mutate(across(matches("^(rpp_me|dp|dlg|abnb)"), ~standardize(log_na(.)), .names = "log_std_{.col}")) %>%
+  panelr::panel_data(id = ward_code, wave = year_half_num)
+
 feols(dlg_theft_aw ~ std_abnb_active_rentals + std_collective_efficacy | ward_code + year_half, data = dpm_ward_half, panel.id = c("ward_code", "year_half"))
 feols(dp_burglary ~ std_abnb_active_rentals + std_collective_efficacy | ward_code + year_half, data = dpm_ward_half, panel.id = c("ward_code", "year_half"))
 fepois(dp_robbery ~ std_abnb_active_rentals + std_collective_efficacy | ward_code + year_half, data = dpm_ward_half, panel.id = c("ward_code", "year_half"))

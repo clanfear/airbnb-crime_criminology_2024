@@ -1,5 +1,7 @@
 # This script generates all figures for main text and appendix as PDF for final 
 # paper submission. Doing it all in one script because they're pretty redundant.
+# The core analysis are all reproducible using the publicly available reproduction
+# data. Nothing else is reproducible without restricted access data.
 
 library(tidyverse)
 library(sf)
@@ -10,10 +12,6 @@ library(ggh4x)
 library(rmarkdown)
 source("./syntax/project_functions.R")
 
-load("./data/output/abnb_density_data.RData")
-load("./data/derived/shape/london_lsoa.RData")
-load("./data/derived/shape/london_water.RData")
-
 save_airbnb_fig <- function(plot, fig_name, width = 6.5, height = 6, loc = "figures"){
   filename <- glue::glue("./docs/{loc}/{fig_name}.pdf")
   message(str_c("Saving ", filename))
@@ -21,6 +19,11 @@ save_airbnb_fig <- function(plot, fig_name, width = 6.5, height = 6, loc = "figu
 }
 
 # FIG 1: Airbnb density map
+# This figure is not reproducible without the restricted access data
+
+load("./data/output/abnb_density_data.RData")
+load("./data/derived/shape/london_lsoa.RData")
+load("./data/derived/shape/london_water.RData")
 
 abnb_density_plot <- abnb_density_data %>%
   mutate(abnb_density = ifelse(abnb_density == 0, NA, abnb_density)) %>%
@@ -35,7 +38,7 @@ abnb_density_plot <- abnb_density_data %>%
                          height      = unit(1, "cm"),
                          width       = unit(1, "cm")) +
   scale_fill_viridis_c(option = "inferno", labels = function(x) format(x, big.mark = ",", scientific = FALSE)) +
-  labs(fill = "Properties<br>per KM^2") + 
+  labs(fill = "Properties<br>per km<sup>2</sup>") + 
   theme(legend.title  = element_markdown(size = 8),
         legend.position = "right",
         text = element_text(family = "serif"))
@@ -123,6 +126,9 @@ save_airbnb_fig(dpm_half_ce_fit_plot, "fig-8-ml-sem-half-yearly-ce", width = 6)
 # APPENDIX FIGURES
 ##################
 
+# Appendix figures should be assumed to not be reproducible as they often call
+# on additional non-public data to run the underlying models.
+
 # FIG A1: Population Density
 
 load("./data/output/abnb_density_data.RData")
@@ -141,12 +147,12 @@ pop_density_plot <- abnb_density_data %>%
                          height      = unit(1, "cm"),
                          width       = unit(1, "cm")) +
   scale_fill_viridis_c(option = "inferno", labels = function(x) format(x, big.mark = ",", scientific = FALSE)) +
-  labs(fill = "Residents<br>per KM^2") + 
+  labs(fill = "Residents<br>per km<sup>2</sup>") + 
   theme(legend.title  = element_markdown(size = 8),
         legend.position = "right",
         text = element_text(family = "serif"))
 pop_density_plot
-save_airbnb_fig(pop_density_plot, "fig-a1-pop-density", height = 4, loc = "figure-appendix")
+save_airbnb_fig(pop_density_plot, "fig-a1-pop-density", height = 4, loc = "figures-appendix")
 
 
 # FIG A2: Unstandardized Estimates
@@ -182,7 +188,7 @@ dpm_quarter_fit_unstd_plot <- ggplot(plot_data, aes(x = estimate, y = spec, grou
         axis.text.y = element_text(face = "italic"),
         axis.title.y = ggtext::element_markdown())
 dpm_quarter_fit_unstd_plot
-save_airbnb_fig(dpm_quarter_fit_unstd_plot, "fig-a2-dpm-unstd", loc = "figure-appendix")
+save_airbnb_fig(dpm_quarter_fit_unstd_plot, "fig-a2-dpm-unstd", loc = "figures-appendix")
 
 # FIG A3:  Unstandardized estimates with different prop types
 load("./data/output/dpm_quarter_diffprops_fit_unstd.RData")
@@ -220,7 +226,7 @@ dpm_quarter_diffprops_fit_unstd_plot <- ggplot(plot_data, aes(x = estimate, y = 
         axis.title.y = ggtext::element_markdown(),
         legend.position = "none")
 dpm_quarter_diffprops_fit_unstd_plot
-save_airbnb_fig(dpm_quarter_diffprops_fit_unstd_plot, "fig-a3-dpm-unstd", loc = "figure-appendix")
+save_airbnb_fig(dpm_quarter_diffprops_fit_unstd_plot, "fig-a3-dpm-unstd", loc = "figures-appendix")
 
 # Property Usage
 
@@ -228,7 +234,7 @@ load("./data/output/dpm_alt_specs/dpm_quarter_usage_fit.RData")
 
 dpm_quarter_usage_fit_plot <- dpm_coef_plot(dpm_quarter_usage_fit)
 dpm_quarter_usage_fit_plot
-save_airbnb_fig(dpm_quarter_usage_fit_plot, "fig-a4-dpm-usage", loc = "figure-appendix")
+save_airbnb_fig(dpm_quarter_usage_fit_plot, "fig-a4-dpm-usage", loc = "figures-appendix")
 
 # Airbnb Concentration
 load("./data/output/dpm_alt_specs/dpm_quarter_nni_fit.RData")
@@ -258,14 +264,14 @@ dpm_quarter_nni_fit_plot <- dpm_quarter_nni_fit |>
           axis.text.y = element_text(face = "italic"),
           axis.title.y = ggtext::element_markdown())
 dpm_quarter_nni_fit_plot
-save_airbnb_fig(dpm_quarter_nni_fit_plot, "fig-a5-dpm-concentration", height = 3, loc = "figure-appendix")
+save_airbnb_fig(dpm_quarter_nni_fit_plot, "fig-a5-dpm-concentration", height = 3, loc = "figures-appendix")
 
 # Excluding London Zone 1
 
 load("./data/output/dpm_quarter_not_zone_1_fit.RData")
 dpm_quarter_not_zone_1_fit_plot <- dpm_coef_plot(dpm_quarter_not_zone_1_fit)
 dpm_quarter_not_zone_1_fit_plot
-save_airbnb_fig(dpm_quarter_not_zone_1_fit_plot, "fig-a6-dpm-zone-1", loc = "figure-appendix")
+save_airbnb_fig(dpm_quarter_not_zone_1_fit_plot, "fig-a6-dpm-zone-1", loc = "figures-appendix")
 
 # Spatial Lag
 load("./data/output/dpm_quarter_splag_fit.RData")
@@ -290,7 +296,7 @@ dpm_quarter_splag_fit_plot <- dpm_coef_plot(dpm_quarter_splag_fit, scales = "fre
                                                                 limits = c(-0.006, 0.006),
                                                                 labels = no_lead_zero)))
 dpm_quarter_splag_fit_plot
-save_airbnb_fig(dpm_quarter_splag_fit_plot, "fig-a7-dpm-splag", loc = "figure-appendix")
+save_airbnb_fig(dpm_quarter_splag_fit_plot, "fig-a7-dpm-splag", loc = "figures-appendix")
 
 # Policing
 
@@ -298,13 +304,13 @@ save_airbnb_fig(dpm_quarter_splag_fit_plot, "fig-a7-dpm-splag", loc = "figure-ap
 load("./data/output/dpm_quarter_ss_fit.RData")
 dpm_quarter_ss_fit_plot <- dpm_coef_plot(dpm_quarter_ss_fit, scales = "free_x")
 dpm_quarter_ss_fit_plot
-save_airbnb_fig(dpm_quarter_ss_fit_plot, "fig-a8-dpm-stops", loc = "figure-appendix")
+save_airbnb_fig(dpm_quarter_ss_fit_plot, "fig-a8-dpm-stops", loc = "figures-appendix")
 
 # FIG A9: Police patrols
 load("./data/output/dpm_half_patrols_fit.RData")
 dpm_half_patrols_fit_plot <- dpm_coef_plot(dpm_half_patrols_fit)
 dpm_half_patrols_fit_plot
-save_airbnb_fig(dpm_half_patrols_fit_plot, "fig-a9-dpm-patrols", loc = "figure-appendix")
+save_airbnb_fig(dpm_half_patrols_fit_plot, "fig-a9-dpm-patrols", loc = "figures-appendix")
 
 # Fig A10: DPM ward-year 
 load("./data/output/dpm_year_ce_imputed_2lvl_fit.RData")
@@ -318,7 +324,7 @@ dpm_ward_year_plot <- dpm_year_ce_imputed_2lvl_fit %>%
     labels = no_lead_zero
   ) 
 dpm_ward_year_plot
-save_airbnb_fig(dpm_ward_year_plot, "fig-a10-dpm-year", loc = "figure-appendix")
+save_airbnb_fig(dpm_ward_year_plot, "fig-a10-dpm-year", loc = "figures-appendix")
 
 # FIG A11: DPM half-year with price
 load("./data/output/dpm_year_ce_medianprop_fit.RData")
@@ -352,7 +358,7 @@ dpm_year_ce_medianprop_fit_plot <- dpm_year_ce_medianprop_fit%>%
                                                       limits = c(-0.5, 0.5),
                                                       labels = no_lead_zero)))
 dpm_year_ce_medianprop_fit_plot
-save_airbnb_fig(dpm_year_ce_medianprop_fit_plot, "fig-a11-dpm-medianprop", loc = "figure-appendix")
+save_airbnb_fig(dpm_year_ce_medianprop_fit_plot, "fig-a11-dpm-medianprop", loc = "figures-appendix")
 
 # FIG A12: DPM CE and Airbnb
 load("./data/output/dpm_year_ce_abnb_fit.RData")
@@ -395,14 +401,14 @@ dv_abnb <- ggplot(dpm_year_ce_abnb_fit %>%
   scale_x_continuous(breaks = c(0, 0.01, 0.02), labels = no_lead_zero)
 dpm_yearly_ce_abnb_plot <- dv_ce + dv_abnb
 dpm_yearly_ce_abnb_plot
-save_airbnb_fig(dpm_yearly_ce_abnb_plot, "fig-a12-yearly-ce-abnb", width = 6, height = 3, loc = "figure-appendix")
+save_airbnb_fig(dpm_yearly_ce_abnb_plot, "fig-a12-yearly-ce-abnb", width = 6, height = 3, loc = "figures-appendix")
 
 # Half-Yearly Estimates by Property Type
 
 load("./data/output/dpm_half_diffprops_fit.RData")
 dpm_half_diffprops_fit_plot <- dpm_coef_plot(dpm_half_diffprops_fit, con_only = TRUE) 
 dpm_half_diffprops_fit_plot
-save_airbnb_fig(dpm_half_diffprops_fit_plot, "fig-a13-dpm-diffpropsyear", height = 3, loc = "figure-appendix")
+save_airbnb_fig(dpm_half_diffprops_fit_plot, "fig-a13-dpm-diffpropsyear", height = 3, loc = "figures-appendix")
 
 
 # Perceived Disorder
@@ -416,7 +422,7 @@ dpm_half_dis_fit_plot <- dpm_half_dis_fit %>%
                      limits = c(-0.09, 0.14),
                      labels = no_lead_zero)
 dpm_half_dis_fit_plot
-save_airbnb_fig(dpm_half_dis_fit_plot, "fig-a14-dpm-percdis", width = 6.5, height = 6, loc = "figure-appendix")
+save_airbnb_fig(dpm_half_dis_fit_plot, "fig-a14-dpm-percdis", width = 6.5, height = 6, loc = "figures-appendix")
 
 
 # Effects on Collective Efficacy by Property Type
@@ -443,7 +449,7 @@ dpm_half_ce_diffprops_fit_plot <- ggplot(dpm_half_ce_diffprops_fit %>%
         axis.title.y = ggtext::element_markdown()) +
   scale_x_continuous(breaks = c(-0.1, 0, 0.1), label = no_lead_zero)
 dpm_half_ce_diffprops_fit_plot
-save_airbnb_fig(dpm_half_ce_diffprops_fit_plot, "fig-a15-year-diffprops", width = 6, height = 3, loc = "figure-appendix")
+save_airbnb_fig(dpm_half_ce_diffprops_fit_plot, "fig-a15-year-diffprops", width = 6, height = 3, loc = "figures-appendix")
 
 # Prop vals
 
@@ -456,4 +462,4 @@ dpm_half_ce_medianprop_fit_plot <- dpm_half_ce_medianprop_fit %>%
   scale_x_continuous(breaks = c(-0.1, 0, 0.1),
                      label = no_lead_zero)
 dpm_half_ce_medianprop_fit_plot
-save_airbnb_fig(dpm_half_ce_medianprop_fit_plot, "fig-a16-ce-propvals", width = 6.5, height = 6, loc = "figure-appendix")
+save_airbnb_fig(dpm_half_ce_medianprop_fit_plot, "fig-a16-ce-propvals", width = 6.5, height = 6, loc = "figures-appendix")

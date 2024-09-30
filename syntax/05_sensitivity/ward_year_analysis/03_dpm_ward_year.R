@@ -14,6 +14,7 @@ dpm_ward_year <- ward_year %>%
   mutate(across(matches("^(rpp_me|dp|dlg|abnb)"), ~standardize(log_na(.)), .names = "log_std_{.col}")) %>%
   panelr::panel_data(id = ward_code, wave = year)
 
+# Fit
 dpm_year_fit <- expand.grid(dv = c("log_std_dp_robbery", "log_std_dp_burglary", "log_std_dp_asb", "log_std_dp_violence", "log_std_dlg_violence_harm_aw", "log_std_dlg_theft_aw"),
                                spec = c("both", "con", "lag")) %>%
   mutate(

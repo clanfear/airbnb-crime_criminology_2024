@@ -1,8 +1,12 @@
+# This script processes the MOPAC Public Attitudes Survey data. The PAS changes
+# regularly, so each version gets a bit of processing.
+
 library(tidyverse)
 library(haven)
 source("./syntax/project_functions.R")
 load("./data/derived/ward_lsoa_index.RData")
 
+# Manual directory setting again
 data_dir <- "Z:/CSI Projects/Airbnb/Data/"
 
 # Financial year 11 is 2015; 13 is 2017 etc.
@@ -59,10 +63,10 @@ pas_15_17 <- pas_15_17_raw %>%
 
 pas_17_18_raw <- read_spss("Z:/CSI Projects/Airbnb/Data/MOPAC Public Attitudes Survey/Data/FY 17-18 PAS data ward date.sav")
 pas_17_18 <- pas_17_18_raw %>%
-  select(ward_code              = ward,
+  select(ward_code         = ward,
          ward_borough      = ward_unique,
-         lsoa_code              = SOA1,
-         msoa_code              = SOA2,
+         lsoa_code         = SOA1,
+         msoa_code         = SOA2,
          interview_date,
          borough           = C2,
          race              = NQ147r,
@@ -96,10 +100,10 @@ pas_17_18 <- pas_17_18_raw %>%
 pas_18_19_raw <- read_spss("Z:/CSI Projects/Airbnb/Data/MOPAC Public Attitudes Survey/Data/FY 18-19 PAS data ward date.sav")
 
 pas_18_19 <- pas_18_19_raw %>%
-  select(ward_code              = ward,
+  select(ward_code         = ward,
          ward_borough      = ward_unique,
-         lsoa_code              = SOA1,
-         msoa_code              = SOA2,
+         lsoa_code         = SOA1,
+         msoa_code         = SOA2,
          interview_date,
          borough           = C2,
          race              = NQ147r,
@@ -127,9 +131,10 @@ pas_18_19 <- pas_18_19_raw %>%
          perdis_vandalism  = ZQ10D,
          perdis_drunk      = ZQ10F,
          victim_year       = BQ90A,
-         see_patrols         = Q65
+         see_patrols       = Q65
   )
 
+# Create a wide dataset
 pas_15_18_wide <- bind_rows(pas_15_17, pas_17_18, pas_18_19) |>
   # First, convert numeric quarter into date of start of quarter. Quarter 41 is
   # 4-Apr-2015, so we subtract 41 from quarter and multiply by 3 to get months
@@ -174,6 +179,7 @@ pas_15_18_wide <- bind_rows(pas_15_17, pas_17_18, pas_18_19) |>
 # This gives me some confidence in the reconciliation process---not sure how they assigned Wards but my way doesn't look less accurate.
 pas_15_18_wide %>% filter(ward_code != old_ward_code & old_ward_code %in% ward_lsoa_index$ward_code) %>% count(quarter)
 
+# Long version for use with hierarchical models
 pas_15_18_long <- pas_15_18_wide %>%
   select(-old_ward_code) %>%
   mutate(across(matches("^(coh|inf|per)"), ~as.numeric(.))) %>%

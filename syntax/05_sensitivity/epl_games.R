@@ -29,8 +29,8 @@ library(dpm)
 
 load("./data/derived/shape/london_lsoa.RData")
 load("./data/derived/neighbors/london_lsoa_neighbors.RData")
-load("./data/analytical/lsoa_quarter_props_crime.RData")
-load("./data/analytical/lsoa_month_props_crime.RData")
+load("./data/analytical/lsoa_quarter.RData")
+load("./data/analytical/lsoa_month.RData")
 
 london_stadiums <- read_csv("./data/raw/football/stadiums-with-GPS-coordinates.csv") %>%
   st_as_sf(coords = c("Longitude", "Latitude"), crs = 4326) %>%
@@ -85,7 +85,7 @@ lsoa_month_props_crime_epl <- lsoa_month_props_crime %>%
 
 
 london_epl_quarter <- london_epl_games %>%
-  filter(date_quarter >= min(lsoa_quarter_props_crime$date) & date_quarter <= max(lsoa_quarter_props_crime$date)) %>%
+  filter(date_quarter >= min(lsoa_quarter$date) & date_quarter <= max(lsoa_quarter$date)) %>%
   group_by(lsoa_code, date_quarter) %>%
   summarize(n_games       = n(),
             total_cap     = sum(Capacity),
@@ -93,10 +93,10 @@ london_epl_quarter <- london_epl_games %>%
             n_big_visitor = sum(big_visitor == "big visitor"), 
             .groups       = "drop") %>%
   complete(lsoa_code    = unique(london_lsoa$lsoa_code), 
-           date_quarter = unique(lsoa_quarter_props_crime$date), 
+           date_quarter = unique(lsoa_quarter$date), 
            fill = list(n_games = 0, total_cap = 0, n_rivalry = 0, n_big_visitor = 0))
 
-lsoa_quarter_props_crime_epl <- lsoa_quarter_props_crime %>%
+lsoa_quarter_props_crime_epl <- lsoa_quarter %>%
   inner_join(london_epl_quarter, by = c("lsoa_code", "date" = "date_quarter"))
 
 

@@ -6,48 +6,54 @@ library(sf)
 library(ggtext)
 library(patchwork)
 
-load("./data/analytical/lsoa_quarter_props_crime.RData")
+load("./data/analytical/lsoa_quarter.RData")
 
 load("./data/derived/london_lsoa_pop.RData")
 
 
-abnb_households <- lsoa_quarter_props_crime %>%
+abnb_households <- lsoa_quarter %>%
   inner_join(london_lsoa_pop) %>%
   group_by(lsoa_code) %>%
   mutate(abnb_dedicated_hh_density = as.numeric(abnb_dedicated_prop / households),
          abnb_hh_density_change = abnb_dedicated_hh_density - lag(abnb_dedicated_hh_density)) %>%
   ungroup() %>%
-  select(lsoa_code, date, abnb_dedicated_hh_density, abnb_hh_density_change, abnb_dedicated_prop, households)
+  select(lsoa_code, year_quarter, abnb_dedicated_hh_density, abnb_hh_density_change, abnb_dedicated_prop, households)
 
+# Highest quarterly dedicated Airbnb density
 abnb_households%>%
   arrange(desc(abnb_dedicated_hh_density))
 
+# Highest change in density
 abnb_households%>%
   arrange(desc(abs(abnb_hh_density_change)))
 
+# Highest density LSOA
 abnb_households %>%
   filter(lsoa_code == "E01004763") %>%
   print(n=100)
 
+# Quartiles of density
 abnb_households %>%
   group_by(lsoa_code) %>%
   summarize(abnb_dedicated_hh_density = mean(abnb_dedicated_hh_density)) %>%
   pull(abnb_dedicated_hh_density) %>%
   quantile(probs = c(1, 0.99, 0.95, 0.90, 0.75, 0.5))
 
+# Quartiles of density change
 abnb_households %>%
   group_by(lsoa_code) %>%
   pull(abnb_hh_density_change) %>%
   abs() %>%
   quantile(probs = c(1, 0.99, 0.95, 0.90, 0.75, 0.5), na.rm=TRUE)
 
+# Unstandardized estimates
 load("./data/output/dpm_quarter_fit_unstd.RData")
 unstd_estimates <- dpm_quarter_fit_unstd |>
   filter(spec == "con" & term == "abnb_active_rentals") |>
   select(name = dv, est_effect = estimate)
 
-
-lsoa_crime_count |> 
+# Different ways to interpret the unstandardized estimates
+lsoa_quarter |> 
   filter(year == 2018) |> 
   group_by(lsoa_code) |> 
   summarize(across(c(dp_robbery, dp_burglary, dlg_theft, dp_violence), ~sum(., na.rm=TRUE))) |>
@@ -63,7 +69,9 @@ lsoa_crime_count |>
          abnbs_pct_to_get_1pct = (abnbs_to_get_1pct+15.40248) / 15.40248,
          crime_from_10pctabnb = active_props*.1*yearly_effect,
          crimepct_from_10pctabnb = (crime_from_10pctabnb+crime)/crime) |> glimpse()
-lsoa_quarter_props_crime |> 
+
+# Average active airbnbs per quarter
+lsoa_quarter |> 
   group_by(year_quarter) |>
   summarize(abnb_active_rentals = sum(abnb_active_rentals)) |>
   pull(abnb_active_rentals) |> mean()

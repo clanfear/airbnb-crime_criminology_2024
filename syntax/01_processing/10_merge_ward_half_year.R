@@ -1,3 +1,6 @@
+# This script merges the ward-level data sets into one analytical ward half-year
+# data set
+
 library(tidyverse)
 library(lubridate)
 library(sf)
@@ -29,17 +32,3 @@ nrow(ward_half) == n_distinct(ward_half$ward_code) * n_distinct(ward_half$year_h
 
 save(ward_half, file = "./data/analytical/ward_half.RData")
 
-# Finally, produce the analytical file in panelr format for DPM
-# Log then standardize; standardize across all data rather than within model
-# as coefficients are fixed across waves; within-wave standardization will do
-# strange things in that situation (same coef, different scales).
-
-dpm_ward_half <- ward_half %>%
-  mutate(year_half_num = as.numeric(year_half),
-         collective_efficacy = ce) |>
-  mutate(across(matches("^(dp|dlg)"), ~log_na(.), .names = "log_{.col}")) %>%
-  mutate(across(matches("^(rpp|ce|dp|dlg|abnb|collective)"), ~standardize(.), .names = "std_{.col}")) %>%
-  mutate(across(matches("^(rpp_me|dp|dlg|abnb)"), ~standardize(log_na(.)), .names = "log_std_{.col}")) %>%
-  panelr::panel_data(id = ward_code, wave = year_half_num)
-
-save(dpm_ward_half, file = "./data/analytical/dpm_ward_half.RData")

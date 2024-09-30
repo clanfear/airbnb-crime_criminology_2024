@@ -37,10 +37,13 @@ rsconnect/
 
 # Data
 
-
 data/raw/*
-!data/raw/london_lsoa_zone_1.RData
 data/derived/
 data/analytical/
 data/output/
 
+# Reproduction data
+!data/raw/london_lsoa_zone_1.RData
+!data/analytical/lsoa_quarter.RData
+!data/analytical/ward_half.RData
+!data/derived/london_lsoa_pop.RData

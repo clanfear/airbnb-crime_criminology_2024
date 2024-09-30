@@ -1,4 +1,5 @@
-# Sensitivity test reducing resolution of ward analyses to half-years
+# This script uses measurement models to produce estimates of collective 
+# efficacy (main text) and perceived disorder (sensitivity test)
 
 library(tidyverse)
 library(lavaan)
@@ -16,6 +17,7 @@ load("./data/derived/airbnb/airdna_ward_disagg.RData")
 load("./data/derived/shape/london_ward.RData")
 source("./syntax/project_functions.R")
 
+# First we do some imputation of a small number of missing values
 if(file.exists("./data/derived/mopac/pas_imputed.RData")){
   load("./data/derived/mopac/pas_imputed.RData")
 } else{
@@ -30,7 +32,8 @@ if(file.exists("./data/derived/mopac/pas_imputed.RData")){
                         "inf_sanction", "see_patrols", 
                         "perdis_noise", "perdis_teens", "perdis_litter", "perdis_vandalism", "perdis_drunk"))
 }
-# Calculate collective efficacy
+
+# Calculate collective efficacy across imputed datasets
 cd_fac_form <- "
 ce =~ coh_courtesy + coh_trust  + coh_take_pride + coh_get_help + coh_get_along + inf_have_control + inf_call_police + inf_sanction
 "
@@ -50,14 +53,17 @@ save(pas_cfa_imputed_loadings, file = "./data/output/pas_cfa_imputed_loadings.RD
 pas_cfa_fit <- map_dfr(pas_cfa_imputed, fitmeasures) |>
   select(chisq, pvalue, chisq.scaled, pvalue.scaled, cfi, tli, rmsea, rmsea.scaled, srmr)
 
+# Get empirical Bayes modal factor scores
 pas_fs_imputed <- map2(.x = pas_cfa_imputed, .y = completeData(pas_imputed), ~cbind(lavPredict(.x, method = "EBM", append.data = FALSE), .y))
 
+# Toss into a two level HLM
 imputed_2lvl_lmer <- pas_fs_imputed |>
     future_map(~ lmer(ce ~ race + tenure_num + age_num + employment + homeowner + gender + victim_year  + (1|half_ward), data = .x, REML = FALSE))
-  # Calc reliability as the average over all models
+
+# Calc reliability as the average over all models
 message(paste0("Mean reliability across ", length(imputed_2lvl_lmer), " imputed sets: ", round(mean(future_map_dbl(imputed_2lvl_lmer, ~lme_reliability_2lvl(.x))), 3)))
 
-
+# Function to extract mean random effect
 extract_mean_re <- function(x){
   future_map_dfr(x, ~tibble::rownames_to_column(ranef(.x)$half_ward, "half_ward")) |>
     group_by(half_ward) |>
@@ -66,6 +72,7 @@ extract_mean_re <- function(x){
     mutate(year_half = as.character(year_half))
 }
 
+# Extract mean random effect as CE estimate
 ce_ward_half_2lvl_imputed <- extract_mean_re(imputed_2lvl_lmer)
 
 save(ce_ward_half_2lvl_imputed, file = "./data/derived/mopac/ce_ward_half_2lvl_imputed.RData")

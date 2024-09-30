@@ -3,9 +3,10 @@ library(flextable)
 library(fastDummies)
 source("./syntax/project_functions.R")
 
-load("./data/analytical/lsoa_month_props_crime.RData")
-load("./data/analytical/lsoa_quarter_props_crime.RData")
+load("./data/analytical/lsoa_month.RData")
+load("./data/analytical/lsoa_quarter.RData")
 load("./data/analytical/ward_half.RData")
+# PAS raw data needed here but not publicly available
 load("./data/derived/mopac/pas_15_18_wide.RData")
 
 sources <- c("abnb" = "AirDNA",
@@ -72,6 +73,7 @@ year_half_descriptives <- ward_half %>%
   mutate(name = str_replace(str_remove(name, "^[a-z]+_"), "^ce", "Collective Efficacy"))
 save(year_half_descriptives, file = "./data/output/year_half_descriptives.RData")
 
+# This is not reproducible because these data are not publicly available
 pas_vars <- pas_15_18_wide %>%
   transmute(race, employment, tenure_num, age_num, homeowner, male = gender, victim_year, ward_year = paste0(ward_code, "_", year),
          coh_courtesy, coh_trust, coh_take_pride, coh_get_help, coh_get_along, inf_have_control, inf_call_police, inf_sanction) %>%

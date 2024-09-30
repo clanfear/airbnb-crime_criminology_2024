@@ -1,3 +1,7 @@
+# This script uses areal weighting to merge LSOA data to wards for datasets only
+# identified at the LSOA level. Point data sources were all directly merged to 
+# wards.
+
 library(tidyverse)
 library(sf)
 library(areal)
@@ -12,9 +16,12 @@ load("./data/derived/crime/dp_crime_lat_lon.RData")
 load("./data/derived/property_prices/property_prices_lsoa_half.RData")
 load("./data/derived/property_prices/property_prices_lsoa_year.RData")
 
+# Quick helper for deleting chunks of spatial features because we don't want
+# water area to contribute to the areal weights
 st_erase <- function(x, y) {
   st_difference(x, st_make_valid(st_union(st_combine(y))))
 }
+
 # Focusing on using 2018 wards.
 # Two tasks here: Match dp data with lat/lon to Wards, then areal weight dlg and dp data to wards.
 # Can use the lat/lon DP data to compare to areal weighted to get a sense of accuracy
@@ -65,6 +72,7 @@ ward_lsoa_2001_weights <- aw_intersect(london_ward_nowater, london_lsoa_2001_now
 # 90% of LSOAs are essentially entirely (99%) in one ward
 # Roughly 95% of LSOAs have at least 90% of their area in one ward
 # Only 9 LSOAs out of 4835 (0.19%) do not have at least 50% of their area in one ward
+# Together this means areal weighting should be very accurate
 
 ward_lsoa_weights %>% group_by(lsoa_code) %>% arrange(desc(area_weight)) %>% slice(1L) %>% pull(area_weight) %>% quantile(c(0.001, 0.01, 0.05, 0.053, 0.1, 0.5, 0.9))
 
@@ -87,8 +95,9 @@ ward_lsoa_index <- rbind(highest_ward_lsoa_weights,
 
 save(ward_lsoa_index, file = "./data/derived/ward_lsoa_index.RData")
 
-# Wow, okay, the areal weighting is really, really accurate.
-# Everything is correlated > 0.99
+# Wow, okay, the areal weighting is really, really accurate. We can take point
+# measures aggregated to ward (where we know the truth) and compare to areal
+# weighting the same measures from LSOA. The two methods are correlated > 0.99.
 ward_crime_weighted <- lsoa_crime_count %>% 
   mutate(dlg_burglary = ifelse(is.na(dlg_burglary), dp_burglary, dlg_burglary),
          dlg_robbery = ifelse(is.na(dlg_robbery), dp_robbery, dlg_robbery),
@@ -108,7 +117,8 @@ ward_crime_weighted %>% select(matches("^(dlg|dp)")) %>% cor(use = "pairwise.com
 save(ward_crime_weighted, file = "./data/derived/crime/ward_crime_weighted.RData")
 
 # Property prices
-# These will only be used in (half)yearly analyses, so do them separately using the weights and calc year values.
+# These will only be used in (half)yearly analyses, so do them separately using 
+# the weights and calc year values.
 
 ward_lsoa_intensive_weights <- aw_intersect(london_ward_nowater, london_lsoa_nowater, "area") |>
   aw_total(london_lsoa_nowater, lsoa_code, "area", "total_area", type = "intensive", weight = "sum") |>

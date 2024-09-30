@@ -8,7 +8,7 @@ library(dpm)
 library(lme4)
 
 load("./data/derived/shape/london_lsoa.RData")
-load("./data/analytical/lsoa_quarter_props_crime.RData")
+load("./data/analytical/lsoa_quarter.RData")
 source("./syntax/project_functions.R")
 
 # STOP AND SEARCH
@@ -32,7 +32,7 @@ dpm_quarter_ss <- ss_data |>
            fill = list(n = 0)) |>
   rename(stops = n) |>
   arrange(lsoa_code, year_quarter) |>
-  inner_join(lsoa_quarter_props_crime) |>
+  inner_join(lsoa_quarter) |>
   mutate(dlg_violence = dlg_violence_noharm + dlg_violence_harm) |>
   mutate(across(matches("^(dp|dlg|abnb|nni|rpp|stops)"), ~standardize(.))) %>%
   mutate(., stops_residual = residuals(lm(stops ~ dp_robbery + dp_burglary + dp_asb + dp_violence + dlg_theft + dlg_violence_harm, data = .))) |>
@@ -70,8 +70,16 @@ dpm_coef_plot(dpm_quarter_ssr_fit)
 
 
 # POLICE PATROLS
-load("./data/derived/dpm_ward_half.RData")
+load("./data/derived/ward_half.RData")
 load("./data/derived/mopac/pas_15_18_wide.RData")
+dpm_ward_half <- ward_half %>%
+  mutate(year_half_num = as.numeric(year_half),
+         collective_efficacy = ce) |>
+  mutate(across(matches("^(dp|dlg)"), ~log_na(.), .names = "log_{.col}")) %>%
+  mutate(across(matches("^(rpp|ce|dp|dlg|abnb|collective)"), ~standardize(.), .names = "std_{.col}")) %>%
+  mutate(across(matches("^(rpp_me|dp|dlg|abnb)"), ~standardize(log_na(.)), .names = "log_std_{.col}")) %>%
+  panelr::panel_data(id = ward_code, wave = year_half_num)
+
 lmer_patrols <- lmer(see_patrols ~ race + tenure_num + age_num + employment + homeowner + gender + victim_year  + (1|half_ward), REML = FALSE, data = pas_15_18_wide %>%
                        mutate(see_patrols = as.numeric(see_patrols),
                               half_ward = paste0(year_half, "_", ward_code)))

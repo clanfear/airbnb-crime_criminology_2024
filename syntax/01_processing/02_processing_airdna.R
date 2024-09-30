@@ -4,16 +4,18 @@
 library(tidyverse)
 library(lubridate)
 library(sf)
+source("./syntax/project_functions.R")
 
 # Run scratch to rerun even computationally intensive things.
 run_scratch <- FALSE
 
+# Secure access data directory will need to manually set
 data_dir <- "Z:/CSI Projects/Airbnb/Data/CDRC/Data/"
 
 load("./data/derived/shape/london_lsoa.RData")
 load("./data/derived/shape/london_ward.RData")
 load("./data/derived/london_lsoa_pop.RData")
-source("./syntax/project_functions.R")
+
 
 # Prop data need preprocessing to deal with extraneous commas and quotes
 # This just reads in the csv file line by line and fixes the issues before
@@ -65,7 +67,10 @@ if(file.exists("./data/derived/airbnb/airdna_monthly.RData") & !run_scratch){
   save(airdna_monthly, file = "./data/derived/airbnb/airdna_monthly.RData")
 }
 
-# Aggregating to LSOAs
+#########
+# LSOAs #
+#########
+
 if(file.exists("./data/derived/airbnb/airdna_lsoa_disagg.RData") & !run_scratch){
   load("./data/derived/airbnb/airdna_lsoa_disagg.RData")
 } else{
@@ -79,7 +84,7 @@ if(file.exists("./data/derived/airbnb/airdna_lsoa_disagg.RData") & !run_scratch)
   save(airdna_lsoa_disagg, file = "./data/derived/airbnb/airdna_lsoa_disagg.RData")
 }
 
-# MONTHLY
+# LSOA MONTHS
 airdna_lsoa_usage_monthly <- airdna_lsoa_disagg |> 
   group_by(lsoa_code, date) |>
   summarize(across(c(abnb_active_time, 
@@ -126,7 +131,7 @@ abnb_density_data <- london_lsoa %>%
 
 save(abnb_density_data, file = "./data/output/abnb_density_data.RData")
 
-# QUARTERLY
+# LSOA QUARTERS
 airdna_lsoa_usage_quarterly <- airdna_lsoa_disagg |> 
   mutate(year_quarter = lubridate::quarter(date, type = "date_first")) |>
   group_by(lsoa_code, year_quarter) |>
@@ -168,9 +173,9 @@ nrow(airdna_lsoa_quarterly) ==  n_distinct(airdna_lsoa_quarterly$year_quarter) *
 
 save(airdna_lsoa_quarterly, file = "./data/derived/airbnb/airdna_lsoa_quarterly.RData")
 
-###
-# WARDS
-###
+#########
+# WARDS #
+#########
 
 if(file.exists("./data/derived/airbnb/airdna_ward_disagg.RData") & !run_scratch){
   load("./data/derived/airbnb/airdna_ward_disagg.RData")
@@ -190,7 +195,7 @@ if(file.exists("./data/derived/airbnb/airdna_ward_disagg.RData") & !run_scratch)
   save(airdna_ward_disagg, file = "./data/derived/airbnb/airdna_ward_disagg.RData")
 }
 
-# WARD HALF-YEAR
+# Ward half-years
 
 airdna_ward_usage_half <- airdna_ward_disagg |>
   group_by(ward_code, year_half) |>
@@ -227,8 +232,8 @@ list_missing(airdna_ward_half)
 nrow(airdna_ward_half) ==  n_distinct(airdna_ward_half$year_half) * n_distinct(airdna_ward_half$ward_code)
 
 save(airdna_ward_half, file = "./data/derived/airbnb/airdna_ward_half.RData")
-# YEARS
 
+# Ward years
 airdna_ward_usage_yearly <- airdna_ward_disagg |> 
   group_by(ward_code, year) |>
   summarize(across(c(abnb_active_time, 

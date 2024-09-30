@@ -1,3 +1,6 @@
+# This script processes publicly available data on crime in London. The data
+# are large, however, so they get tossed in the secure data directory as well.
+
 library(tidyverse)
 library(vroom)
 library(lubridate)
@@ -5,21 +8,22 @@ source("./syntax/project_functions.R")
 load("./data/derived/shape/london_lsoa.RData")
 load("./data/derived/shape/london_ward.RData")
 
+# Manually change for your purposes.
 data_dir <- "Z:/CSI Projects/Airbnb/Data/"
 
-# DLG is only ID'ed to LSOA
+# data.london.gov data are only identified to the LSOA level
 dlg_crime <- read_csv(paste0(data_dir, "data-london-gov-uk/mps_lsoa_level_crime_historic.csv"))|> 
   mutate(across(everything(), ~as.character(.))) |>
   pivot_longer(matches("\\d{6}")) |>
   janitor::clean_names()
 
-# DP has lat/long with 0.951% of cases missing in crimes of interest
+# data.police.uk has lat/long with 0.951% of cases missing in crimes of interest
 dp_crime <- vroom::vroom(str_subset(list.files(paste0(data_dir, "data-police-uk/"), full.names = TRUE), "csv$")) %>%
   janitor::clean_names() %>%
   mutate(date = lubridate::ym(month),
          row_id = row_number())
 
-
+# Take the measures we want for cases with nonmissing lat/lon and within dates
 dp_crime_lat_lon <- dp_crime |>
   filter(!is.na(longitude) & !is.na(latitude)) |>
   filter(date >= lubridate::ym("2014-01") & date <= lubridate::ym("2019-01")) |>
@@ -32,6 +36,7 @@ dp_crime_lat_lon <- dp_crime |>
                      TRUE ~ NA_character_))
 save(dp_crime_lat_lon, file = "./data/derived/crime/dp_crime_lat_lon.RData")
 
+# This index just records if each LSOA month is represented in each data set
 lsoa_crime_index <- london_lsoa %>% 
   st_drop_geometry() %>%
   select(lsoa_code, borough_code) %>%
@@ -97,7 +102,7 @@ dp_lsoa_crime_count <- dp_crime |>
                      TRUE ~ NA_character_)) |>
   pivot_wider(names_from = crime_type, values_from = n) 
 
-
+# Combine them together
 lsoa_crime_count <- lsoa_crime_index |>
   left_join(dlg_lsoa_crime_count) |>
   left_join(dp_lsoa_crime_count) |>
@@ -107,6 +112,7 @@ lsoa_crime_count <- lsoa_crime_index |>
          dp_robbery   = ifelse(is.na(dp_robbery), dlg_robbery, dp_robbery),
          dp_violence  = ifelse(is.na(dp_violence), dlg_violence_noharm + dlg_violence_harm, dp_violence))
 
+# Check how the two data sets are correlated (very high)
 lsoa_crime_count %>%
   select(matches("^(dlg|dp)")) %>%
   cor(use = "pairwise.complete")
