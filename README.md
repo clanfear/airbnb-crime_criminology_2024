@@ -1,4 +1,6 @@
-# airbnb-crime_criminology_2024
+# Reproduction data for: The Promise and Perils of the Sharing Economy: The Impact of Airbnb Lettings on Crime
+
+[![](<https://img.shields.io/badge/Dataverse DOI-10.7910/DVN/YXHITP-blue>)](https://www.doi.org/10.7910/DVN/YXHITP)
 
 This repository contains all code used in the analyses for the following article:
 
